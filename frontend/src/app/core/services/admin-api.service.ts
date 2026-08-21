@@ -12,12 +12,14 @@ import {
   TariffImportListItemDto,
 } from '../models/api.models';
 import { AdminQueryCache } from './admin-query-cache';
+import { CalculatorQueryCache } from './calculator-query-cache';
 
 /** HTTP-слой admin API с in-memory кэшем GET. */
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
   private readonly http = inject(HttpClient);
   private readonly cache = inject(AdminQueryCache);
+  private readonly calculatorCache = inject(CalculatorQueryCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/admin`;
 
   getImports(options: {
@@ -69,6 +71,7 @@ export class AdminApiService {
       tap((detail) => {
         this.cache.invalidate(['imports', 'tariffs']);
         this.cache.set(this.importDetailKey(detail.id), detail);
+        this.calculatorCache.clear();
       }),
     );
   }
@@ -78,6 +81,7 @@ export class AdminApiService {
       tap((detail) => {
         this.cache.invalidate(['imports', 'tariffs']);
         this.cache.set(this.importDetailKey(detail.id), detail);
+        this.calculatorCache.clear();
       }),
     );
   }
@@ -117,7 +121,12 @@ export class AdminApiService {
       .put<AdminSettingsDto>(`${this.baseUrl}/settings/exchange-rate`, {
         rub_to_cny_rate: rubToCnyRate,
       })
-      .pipe(tap((settings) => this.cache.set('settings', settings)));
+      .pipe(
+        tap((settings) => {
+          this.cache.set('settings', settings);
+          this.calculatorCache.clear();
+        }),
+      );
   }
 
   /**

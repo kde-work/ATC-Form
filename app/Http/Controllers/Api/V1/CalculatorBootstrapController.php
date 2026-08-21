@@ -20,6 +20,8 @@ final class CalculatorBootstrapController extends Controller
 
     public function show(): JsonResponse
     {
-        return response()->json($this->formDataCache->bootstrap());
+        return response()
+            ->json($this->formDataCache->bootstrap())
+            ->header('Cache-Control', 'private, max-age=300');
     }
 }

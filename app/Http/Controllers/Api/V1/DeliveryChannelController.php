@@ -21,8 +21,8 @@ final class DeliveryChannelController extends Controller
 
     public function index(DeliveryChannelIndexRequest $request): JsonResponse
     {
-        return response()->json(
-            $this->formDataCache->deliveryChannels($request->platform()),
-        );
+        return response()
+            ->json($this->formDataCache->deliveryChannels($request->platform()))
+            ->header('Cache-Control', 'private, max-age=300');
     }
 }

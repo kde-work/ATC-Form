@@ -123,7 +123,9 @@ Angular:
 - Содержимое: только справочники select-ов и публичный курс. Полные тарифные строки для формул в кэш не кладём.
 - TTL: `rememberForever` до явной инвалидации.
 - Инвалидация: activate/rollback ревизии, смена `rub_to_cny_rate`.
+- HTTP: `Cache-Control: private, max-age=300` на GET справочников.
 - Angular `/calculator` при открытии вызывает bootstrap один раз и фильтрует каналы по platform на клиенте.
+- Браузер: `CalculatorQueryCache` (memory + `localStorage`, префикс `atc.calculator.query.`, TTL 15 мин). POST `/calculations` не кэшируется. Admin activate/rollback/смена курса в том же браузере вызывает `clear()`.
 
 ## Admin endpoints
 

@@ -20,6 +20,8 @@ final class PublicSettingsController extends Controller
 
     public function show(): JsonResponse
     {
-        return response()->json($this->formDataCache->publicSettings());
+        return response()
+            ->json($this->formDataCache->publicSettings())
+            ->header('Cache-Control', 'private, max-age=300');
     }
 }

@@ -20,6 +20,8 @@ final class PlatformController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json($this->formDataCache->platforms());
+        return response()
+            ->json($this->formDataCache->platforms())
+            ->header('Cache-Control', 'private, max-age=300');
     }
 }

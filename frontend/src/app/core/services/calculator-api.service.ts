@@ -11,32 +11,43 @@ import {
   PlatformDto,
   PublicSettingsDto,
 } from '../models/api.models';
+import { CalculatorQueryCache } from './calculator-query-cache';
 
 /** HTTP-слой публичного калькулятора. Расчёт только на backend. */
 @Injectable({ providedIn: 'root' })
 export class CalculatorApiService {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(CalculatorQueryCache);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  /** Презагрузка platforms, всех каналов и публичных настроек. */
+  /** Презагрузка platforms, всех каналов и публичных настроек (memory + localStorage). */
   getBootstrap(): Observable<CalculatorBootstrapDto> {
-    return this.http.get<CalculatorBootstrapDto>(`${this.baseUrl}/calculator/bootstrap`);
+    return this.cache.getOrLoad('bootstrap', () =>
+      this.http.get<CalculatorBootstrapDto>(`${this.baseUrl}/calculator/bootstrap`),
+    );
   }
 
   getPlatforms(): Observable<PlatformDto[]> {
-    return this.http.get<PlatformDto[]>(`${this.baseUrl}/platforms`);
+    return this.cache.getOrLoad('platforms', () =>
+      this.http.get<PlatformDto[]>(`${this.baseUrl}/platforms`),
+    );
   }
 
   getDeliveryChannels(platform: PlatformCode): Observable<DeliveryChannelDto[]> {
-    return this.http.get<DeliveryChannelDto[]>(`${this.baseUrl}/delivery-channels`, {
-      params: { platform },
-    });
+    return this.cache.getOrLoad(`delivery-channels:${platform}`, () =>
+      this.http.get<DeliveryChannelDto[]>(`${this.baseUrl}/delivery-channels`, {
+        params: { platform },
+      }),
+    );
   }
 
   getPublicSettings(): Observable<PublicSettingsDto> {
-    return this.http.get<PublicSettingsDto>(`${this.baseUrl}/settings/public`);
+    return this.cache.getOrLoad('settings:public', () =>
+      this.http.get<PublicSettingsDto>(`${this.baseUrl}/settings/public`),
+    );
   }
 
+  /** POST расчёта не кэшируется. */
   calculate(payload: CalculationRequestDto): Observable<CalculationResultDto> {
     return this.http.post<CalculationResultDto>(`${this.baseUrl}/calculations`, payload);
   }
