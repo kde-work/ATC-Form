@@ -1,58 +1,165 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ATC Express Calculator
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Калькулятор стоимости доставки ATC Express: публичный UI и admin-панель импорта тарифов.
 
-## About Laravel
+- Backend: PHP 8.5, Laravel, MySQL 8.4, nginx (Docker Compose)
+- Frontend: Angular (standalone) в каталоге `frontend/`
+- API: REST JSON, `/api/v1/*`, деньги и веса строками
+- Auth: Laravel Sanctum (Bearer), один admin из seeder
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Быстрый старт
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1. Hosts
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Добавьте в hosts (Windows: `C:\Windows\System32\drivers\etc\hosts`):
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+127.0.0.5 atc.form
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+`APP_BIND_IP` по умолчанию `127.0.0.5` (см. `.env.example`).
 
-## Contributing
+### 2. Env
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bat
+copy .env.example .env
+docker compose run --rm php php artisan key:generate
+```
 
-## Code of Conduct
+Задайте `ADMIN_EMAIL` и `ADMIN_PASSWORD`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3. Поднять стек
 
-## Security Vulnerabilities
+```bat
+docker compose up -d
+docker compose exec php composer install
+docker compose exec php php artisan migrate --force
+docker compose exec php php artisan db:seed --force
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 4. Собрать Angular (обязательно для http://atc.form)
 
-## License
+```bat
+cd frontend
+npm ci
+npm run build
+cd ..
+docker compose up -d --force-recreate nginx
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Или из корня: `npm run build:frontend`, затем recreate nginx.
+
+Открыть: [http://atc.form](http://atc.form) → редирект на `/calculator`.
+
+API: [http://atc.form/api/v1/platforms](http://atc.form/api/v1/platforms).
+
+## Frontend: два режима
+
+### Prod / same-origin (рекомендуется локально через nginx)
+
+1. `cd frontend && npm run build`
+2. nginx отдаёт `frontend/dist/frontend/browser`
+3. `/api`, `/images`, favicon/manifest — из Laravel `public/`
+4. `apiBaseUrl`: `/api/v1` (same origin, CORS не нужен)
+
+Без сборки `http://atc.form/` вернёт 404 SPA (`index.html` отсутствует).
+
+### Dev: Angular dev server
+
+На хосте:
+
+```bat
+cd frontend
+npm start
+```
+
+Открыть `http://127.0.0.1:4200`. Proxy: `frontend/proxy.conf.json` → `http://atc.form`.
+
+В Docker (profile `frontend`):
+
+```bat
+docker compose --profile frontend up -d node
+```
+
+`working_dir`: `frontend/`, порт `ANGULAR_PORT` (default 4200), proxy: `proxy.conf.docker.json` → сервис `nginx`.
+
+## Вход в admin
+
+- UI: [http://atc.form/admin/login](http://atc.form/admin/login)
+- Учётка: `ADMIN_EMAIL` / `ADMIN_PASSWORD` из `.env`
+- После seed: импортов/активных тарифов может не быть — загрузите fixture XLSX и Activate
+
+## Переменные окружения
+
+| Переменная | Назначение |
+|---|---|
+| `APP_URL` / `APP_BIND_IP` / `APP_PORT` | URL и bind nginx |
+| `DB_*` | MySQL |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Seeder admin |
+| `TARIFF_IMPORT_MAX_BYTES` | Лимит XLSX (default 5 MB) |
+| `ANGULAR_PORT` | Порт ng serve в profile `frontend` |
+| `SANCTUM_STATEFUL_DOMAINS` | Cookie-домены (API в UI использует Bearer) |
+
+Полный список: `.env.example`.
+
+## Тесты
+
+Backend (на хосте PHP 8.4+/8.5 или в контейнере):
+
+```bat
+docker compose exec php php artisan test
+```
+
+Или локально: `php85 vendor/bin/phpunit` / `php artisan test` (если PHP подходит).
+
+Frontend:
+
+```bat
+cd frontend
+npm test -- --watch=false
+npm run build
+```
+
+## XLSX импорт
+
+Правила парсинга, статусы и примеры ошибок: [docs/xlsx-import-format.md](docs/xlsx-import-format.md).
+
+Тестовые файлы: `tests/Fixtures/xlsx/` (`valid-tariffs.xlsx` и др.).
+
+## Допущения Yandex Market
+
+- Тарифная модель Yandex опирается на физический вес; габариты в калькуляторе необязательны и по умолчанию скрыты.
+- Фиктивные лимиты для Yandex не выдумываются: в БД только то, что пришло из XLSX / seed.
+- Курс RUB→CNY для Yandex показывается в результате; guest курс не меняет.
+
+## Примеры API
+
+OpenAPI: [docs/openapi.yaml](docs/openapi.yaml).
+
+```bat
+curl -s http://atc.form/api/v1/platforms
+```
+
+```bat
+curl -s -X POST http://atc.form/api/v1/calculations -H "Content-Type: application/json" -H "Accept: application/json" -d "{\"platform\":\"ozon\",\"delivery_channel_code\":\"atc-standard-big\",\"physical_weight_grams\":\"2500\",\"length_cm\":\"100\",\"width_cm\":\"40\",\"height_cm\":\"30\",\"order_cost\":\"500\",\"order_cost_currency\":\"CNY\"}"
+```
+
+```bat
+curl -s -X POST http://atc.form/api/v1/admin/login -H "Content-Type: application/json" -H "Accept: application/json" -d "{\"email\":\"admin@atc.form\",\"password\":\"password\"}"
+```
+
+## Документация
+
+- [docs/architecture.md](docs/architecture.md) — модули и схема данных
+- [docs/xlsx-import-format.md](docs/xlsx-import-format.md) — Excel
+- [docs/openapi.yaml](docs/openapi.yaml) — контракт API
+- `.tmp/task/` — внутренняя постановка и отчёты этапов (не продукт)
+
+## Известные ограничения
+
+- Импорт XLSX в MVP синхронный в HTTP (код готов к Job/очереди).
+- Excel-формулы и VBA на сервере не исполняются.
+- PostgreSQL не используется (MySQL 8.4).
+- Саморегистрации и ролей кроме guest/admin нет.
+- Ручного редактирования тарифов в UI нет — только импорт.
+- Vite в корне остаётся от скелета Laravel; UI приложения — Angular в `frontend/`.

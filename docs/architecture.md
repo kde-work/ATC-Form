@@ -13,11 +13,13 @@ Web-приложение считает стоимость доставки ATC 
 Монорепозиторий:
 
 - корень: Laravel API (nginx уже смотрит в `public/`);
-- `frontend/`: Angular SPA (появится на этапе 9);
+- `frontend/`: Angular SPA;
 - `docker/`: PHP-FPM, nginx;
 - `docs/`: соглашения.
 
-Локальный стек уже задан Docker Compose: PHP 8.5, nginx, MySQL 8.4, Mailpit, Node (profile `frontend`). Redis в проекте нет: сессии и кэш на `file`, очередь `sync`.
+Локальный стек уже задан Docker Compose: PHP 8.5, nginx, MySQL 8.4, Mailpit, Node/Angular (profile `frontend`, `working_dir: frontend/`). Redis в проекте нет: сессии и кэш на `file`, очередь `sync`.
+
+UI на `http://atc.form`: nginx отдаёт production-сборку Angular из `frontend/dist/frontend/browser`, `/api` и бренд-статика (`/images`, favicon) — из Laravel `public/`. Same-origin, CORS для браузера не нужен. Dev: `cd frontend && npm start` (proxy) или `docker compose --profile frontend up`.
 
 ## UI и типографика
 

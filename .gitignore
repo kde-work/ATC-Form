@@ -31,3 +31,8 @@ Thumbs.db
 # Локальные переопределения Docker, не для репозитория
 docker-compose.override.yml
 compose.override.yml
+
+# Angular build (отдаёт nginx); собирается локально/в CI
+/frontend/dist
+/frontend/node_modules
+/frontend/.angular

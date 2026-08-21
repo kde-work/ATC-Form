@@ -1,0 +1,47 @@
+{
+  "/api": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/images": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/favicon.ico": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/favicon.svg": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/favicon-96x96.png": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/apple-touch-icon.png": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/site.webmanifest": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/web-app-manifest-192x192.png": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/web-app-manifest-512x512.png": {
+    "target": "http://nginx",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
