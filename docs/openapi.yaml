@@ -24,6 +24,8 @@ paths:
         Single payload for `/calculator`: platforms, all active delivery channels
         of the active revision, and public exchange rate. Served from file/DB cache
         (`CACHE_STORE`), invalidated on tariff activation/rollback and rate change.
+        Response includes `Cache-Control: private, max-age=300`. Angular also caches
+        in memory and localStorage (TTL 15 minutes).
       operationId: getCalculatorBootstrap
       responses:
         '200':

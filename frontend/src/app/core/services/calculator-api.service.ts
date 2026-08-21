@@ -20,13 +20,14 @@ export class CalculatorApiService {
   private readonly cache = inject(CalculatorQueryCache);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  /** Презагрузка platforms, всех каналов и публичных настроек (memory + localStorage). */
+  /** Презагрузка каналов и публичных настроек (платформы вшиты во фронт). */
   getBootstrap(): Observable<CalculatorBootstrapDto> {
     return this.cache.getOrLoad('bootstrap', () =>
       this.http.get<CalculatorBootstrapDto>(`${this.baseUrl}/calculator/bootstrap`),
     );
   }
 
+  /** @deprecated Платформы фиксированы в CALCULATOR_PLATFORMS; не вызывать с /calculator. */
   getPlatforms(): Observable<PlatformDto[]> {
     return this.cache.getOrLoad('platforms', () =>
       this.http.get<PlatformDto[]>(`${this.baseUrl}/platforms`),

@@ -26,6 +26,7 @@ import {
   PlatformDto,
 } from '../../core/models/api.models';
 import { CalculatorApiService } from '../../core/services/calculator-api.service';
+import { CALCULATOR_PLATFORMS } from '../../core/constants/platforms';
 import { SiteHeader } from '../../shared/components/site-header/site-header';
 import { ResultCard } from './result-card';
 
@@ -60,7 +61,8 @@ export class CalculatorPage implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly platforms = signal<PlatformDto[]>([]);
+  /** Вшито в бандл: совпадает с backend enum, без HTTP. */
+  readonly platforms = signal<PlatformDto[]>([...CALCULATOR_PLATFORMS]);
   /** Все каналы из bootstrap; фильтр по platform на клиенте. */
   private readonly allChannels = signal<DeliveryChannelDto[]>([]);
   readonly channels = signal<DeliveryChannelDto[]>([]);
@@ -114,7 +116,6 @@ export class CalculatorPage implements OnInit {
       )
       .subscribe({
         next: (bootstrap) => {
-          this.platforms.set(bootstrap.platforms);
           this.allChannels.set(bootstrap.delivery_channels);
           this.bootstrapError.set(null);
           this.applyChannelFilter(this.form.controls.platform.value);
