@@ -1,0 +1,97 @@
+<div class="admin-page">
+  <h1 class="admin-page__heading">Active tariffs</h1>
+  <p class="admin-page__lead">
+    Read-only view. Tariffs change only through XLSX import activation.
+  </p>
+
+  <div class="filters">
+    <div class="filters__field">
+      <label for="platform-filter">Platform</label>
+      <select
+        id="platform-filter"
+        [ngModel]="platformFilter()"
+        (ngModelChange)="onPlatformChange($event)"
+      >
+        <option value="">All platforms</option>
+        <option value="ozon">Ozon</option>
+        <option value="yandex_market">Yandex Market</option>
+      </select>
+    </div>
+
+    <div class="filters__field">
+      <label for="revision-filter">Revision</label>
+      <select
+        id="revision-filter"
+        [ngModel]="revisionValue(revisionFilter())"
+        (ngModelChange)="onRevisionChange($event)"
+      >
+        @for (option of revisionOptions(); track option.id ?? 'active') {
+          <option [value]="revisionValue(option.id)">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--error" role="alert">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="state" role="status">Loading tariffs…</p>
+  } @else if (tariffs().length === 0) {
+    <p class="state">No tariffs for the selected filters.</p>
+  } @else {
+    <div class="table-wrap" tabindex="0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Platform</th>
+            <th scope="col">Code</th>
+            <th scope="col">Name</th>
+            <th scope="col">Currency</th>
+            <th scope="col">Base fee</th>
+            <th scope="col">Per gram</th>
+            <th scope="col">Per kg</th>
+            <th scope="col">Weight mode</th>
+            <th scope="col">Vol. divisor</th>
+            <th scope="col">Weight limits</th>
+            <th scope="col">Dimensions limits</th>
+            <th scope="col">Order cost limits</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tariff of tariffs(); track tariff.id) {
+            <tr>
+              <td>{{ tariff.platform }}</td>
+              <td>{{ tariff.code }}</td>
+              <td>{{ tariff.name }}</td>
+              <td>{{ tariff.currency }}</td>
+              <td>{{ formatDecimalString(tariff.fixed_fee) }}</td>
+              <td>{{ formatDecimalString(tariff.per_gram_fee) }}</td>
+              <td>{{ formatDecimalString(tariff.per_kg_fee) }}</td>
+              <td>{{ tariff.chargeable_weight_type ?? '-' }}</td>
+              <td>{{ formatDecimalString(tariff.volumetric_divisor) }}</td>
+              <td>
+                {{ formatDecimalString(tariff.min_weight_grams) }}
+                –
+                {{ formatDecimalString(tariff.max_weight_grams) }} g
+              </td>
+              <td>
+                L ≤ {{ formatDecimalString(tariff.max_length_cm) }} cm;
+                sum ≤ {{ formatDecimalString(tariff.max_sum_dimensions_cm) }} cm
+              </td>
+              <td>
+                RUB {{ formatDecimalString(tariff.min_order_cost_rub) }}–{{
+                  formatDecimalString(tariff.max_order_cost_rub)
+                }};
+                CNY {{ formatDecimalString(tariff.min_order_cost_cny) }}–{{
+                  formatDecimalString(tariff.max_order_cost_cny)
+                }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

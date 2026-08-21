@@ -1,0 +1,90 @@
+<div class="admin-page">
+  <div class="admin-page__toolbar">
+    <div>
+      <h1 class="admin-page__heading">Tariff imports</h1>
+      <p class="admin-page__lead">Upload history, validation status, and active revision.</p>
+    </div>
+    <a class="btn btn--primary" routerLink="/admin/imports/new">Upload new tariff file</a>
+  </div>
+
+  <div class="filters">
+    <label for="status-filter">Status</label>
+    <select
+      id="status-filter"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusChange($event)"
+    >
+      @for (option of statusOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--error" role="alert">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="state" role="status">Loading imports…</p>
+  } @else if (items().length === 0) {
+    <p class="state">No imports found.</p>
+  } @else {
+    <div class="table-wrap" tabindex="0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Uploaded at</th>
+            <th scope="col">File name</th>
+            <th scope="col">Uploaded by</th>
+            <th scope="col">Status</th>
+            <th scope="col">Parsed</th>
+            <th scope="col">Errors</th>
+            <th scope="col">Active revision</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.id) {
+            <tr>
+              <td>{{ formatIsoDate(item.uploaded_at) }}</td>
+              <td>{{ item.original_filename }}</td>
+              <td>{{ item.uploaded_by?.email ?? '-' }}</td>
+              <td>
+                <span class="status-pill">{{ importStatusLabel(item.status) }}</span>
+              </td>
+              <td>{{ item.total_parsed ?? '-' }}</td>
+              <td>{{ item.errors_count }}</td>
+              <td>
+                @if (item.revision?.is_active) {
+                  <span class="badge badge--success">v{{ item.revision!.version_number }} active</span>
+                } @else if (item.revision) {
+                  <span class="badge">v{{ item.revision.version_number }} ({{ item.revision.status }})</span>
+                } @else {
+                  -
+                }
+              </td>
+              <td>
+                <a [routerLink]="['/admin/imports', item.id]">View</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" aria-label="Pagination">
+      <button type="button" class="btn btn--ghost" [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
+        Previous
+      </button>
+      <span class="pagination__info">Page {{ page() }} of {{ lastPage() }} ({{ total() }} total)</span>
+      <button
+        type="button"
+        class="btn btn--ghost"
+        [disabled]="page() >= lastPage()"
+        (click)="goToPage(page() + 1)"
+      >
+        Next
+      </button>
+    </div>
+  }
+</div>

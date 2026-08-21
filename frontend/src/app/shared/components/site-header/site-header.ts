@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -7,4 +7,7 @@ import { RouterLink } from '@angular/router';
   templateUrl: './site-header.html',
   styleUrl: './site-header.scss',
 })
-export class SiteHeader {}
+export class SiteHeader {
+  /** Подзаголовок рядом с логотипом. */
+  readonly title = input('Delivery cost calculator');
+}

@@ -1,0 +1,37 @@
+<div class="admin-shell">
+  <header class="admin-shell__header">
+    <a class="admin-shell__brand" routerLink="/calculator">
+      <img
+        class="admin-shell__logo"
+        src="/images/ATC-Express_main.png"
+        alt="ATC Express"
+        width="180"
+        height="48"
+      />
+    </a>
+
+    <nav class="admin-shell__nav" aria-label="Admin">
+      <a routerLink="/admin/imports" routerLinkActive="is-active">Imports</a>
+      <a routerLink="/admin/tariffs" routerLinkActive="is-active">Tariffs</a>
+      <a routerLink="/admin/settings" routerLinkActive="is-active">Settings</a>
+    </nav>
+
+    <div class="admin-shell__session">
+      @if (userEmail(); as email) {
+        <span class="admin-shell__email">{{ email }}</span>
+      }
+      <button
+        type="button"
+        class="admin-shell__logout"
+        [disabled]="loggingOut()"
+        (click)="logout()"
+      >
+        {{ loggingOut() ? 'Signing out…' : 'Log out' }}
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-shell__main">
+    <router-outlet />
+  </main>
+</div>

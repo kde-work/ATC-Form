@@ -1,0 +1,259 @@
+<div class="admin-page">
+  <p class="admin-page__back">
+    <a routerLink="/admin/imports">Back to imports</a>
+  </p>
+
+  @if (loading()) {
+    <p class="state" role="status">Loading import…</p>
+  } @else if (error()) {
+    <div class="alert alert--error" role="alert">{{ error() }}</div>
+  } @else if (detail(); as item) {
+    <div class="admin-page__toolbar">
+      <div>
+        <h1 class="admin-page__heading">Import #{{ item.id }}</h1>
+        <p class="admin-page__lead">{{ item.original_filename }}</p>
+      </div>
+      <div class="toolbar-actions">
+        @if (item.actions.can_activate) {
+          <button type="button" class="btn btn--primary" (click)="openActivateConfirm()">
+            Activate revision
+          </button>
+        }
+        @if (item.actions.can_rollback) {
+          <button type="button" class="btn btn--danger" (click)="openRollbackConfirm()">
+            Activate this revision / Rollback
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (actionError()) {
+      <div class="alert alert--error" role="alert">{{ actionError() }}</div>
+    }
+
+    <dl class="meta-grid">
+      <div>
+        <dt>Status</dt>
+        <dd>{{ importStatusLabel(item.status) }}</dd>
+      </div>
+      <div>
+        <dt>Uploaded at</dt>
+        <dd>{{ formatIsoDate(item.uploaded_at) }}</dd>
+      </div>
+      <div>
+        <dt>Uploaded by</dt>
+        <dd>{{ item.uploaded_by?.email ?? '-' }}</dd>
+      </div>
+      <div>
+        <dt>File size</dt>
+        <dd>{{ formatBytes(item.file_size_bytes) }}</dd>
+      </div>
+      <div>
+        <dt>Revision</dt>
+        <dd>
+          @if (item.revision; as rev) {
+            v{{ rev.version_number }} ({{ rev.status }})
+            @if (rev.is_active) {
+              <span class="badge badge--success">active</span>
+            }
+          } @else {
+            -
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Parsed by platform</dt>
+        <dd>
+          @if (platformEntries(item.parsed.by_platform).length === 0) {
+            -
+          } @else {
+            @for (entry of platformEntries(item.parsed.by_platform); track entry.key) {
+              <span class="chip">{{ entry.key }}: {{ entry.value }}</span>
+            }
+          }
+        </dd>
+      </div>
+    </dl>
+
+    <div class="tabs" role="tablist" aria-label="Import sections">
+      <button
+        type="button"
+        role="tab"
+        class="tabs__btn"
+        [class.is-active]="tab() === 'summary'"
+        [attr.aria-selected]="tab() === 'summary'"
+        (click)="setTab('summary')"
+      >
+        Summary
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tabs__btn"
+        [class.is-active]="tab() === 'parsed'"
+        [attr.aria-selected]="tab() === 'parsed'"
+        (click)="setTab('parsed')"
+      >
+        Parsed tariffs
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tabs__btn"
+        [class.is-active]="tab() === 'changes'"
+        [attr.aria-selected]="tab() === 'changes'"
+        (click)="setTab('changes')"
+      >
+        Changes
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tabs__btn"
+        [class.is-active]="tab() === 'errors'"
+        [attr.aria-selected]="tab() === 'errors'"
+        (click)="setTab('errors')"
+      >
+        Validation errors ({{ item.errors.length }})
+      </button>
+    </div>
+
+    <div class="tab-panel" role="tabpanel">
+      @if (tab() === 'summary') {
+        @if (item.summary; as summary) {
+          <ul class="summary-list">
+            <li>Total parsed: <strong>{{ summary.total }}</strong></li>
+            <li>Added: <strong>{{ summary.added }}</strong></li>
+            <li>Changed: <strong>{{ summary.changed }}</strong></li>
+            <li>Removed: <strong>{{ summary.removed }}</strong></li>
+          </ul>
+        } @else {
+          <p class="state">No summary available for this import.</p>
+        }
+      }
+
+      @if (tab() === 'parsed') {
+        @if (item.parsed.tariffs.length === 0) {
+          <p class="state">No parsed tariffs.</p>
+        } @else {
+          <div class="table-wrap" tabindex="0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Platform</th>
+                  <th scope="col">Code</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Currency</th>
+                  <th scope="col">Fixed fee</th>
+                  <th scope="col">Per gram</th>
+                  <th scope="col">Per kg</th>
+                  <th scope="col">Weight mode</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tariff of item.parsed.tariffs; track tariff.id) {
+                  <tr>
+                    <td>{{ tariff.platform }}</td>
+                    <td>{{ tariff.code }}</td>
+                    <td>{{ tariff.name }}</td>
+                    <td>{{ tariff.currency }}</td>
+                    <td>{{ formatDecimalString(tariff.fixed_fee) }}</td>
+                    <td>{{ formatDecimalString(tariff.per_gram_fee) }}</td>
+                    <td>{{ formatDecimalString(tariff.per_kg_fee) }}</td>
+                    <td>{{ tariff.chargeable_weight_type ?? '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      @if (tab() === 'changes') {
+        @if (item.diff; as diff) {
+          <div class="changes-grid">
+            <section>
+              <h2>Added ({{ diff.added }})</h2>
+              @if (diff.added_codes.length === 0) {
+                <p class="state">None</p>
+              } @else {
+                <ul>
+                  @for (code of diff.added_codes; track code) {
+                    <li>{{ code }}</li>
+                  }
+                </ul>
+              }
+            </section>
+            <section>
+              <h2>Changed ({{ diff.changed }})</h2>
+              @if (diff.changed_codes.length === 0) {
+                <p class="state">None</p>
+              } @else {
+                <ul>
+                  @for (code of diff.changed_codes; track code) {
+                    <li>{{ code }}</li>
+                  }
+                </ul>
+              }
+            </section>
+            <section>
+              <h2>Removed ({{ diff.removed }})</h2>
+              @if (diff.removed_codes.length === 0) {
+                <p class="state">None</p>
+              } @else {
+                <ul>
+                  @for (code of diff.removed_codes; track code) {
+                    <li>{{ code }}</li>
+                  }
+                </ul>
+              }
+            </section>
+          </div>
+        } @else {
+          <p class="state">No diff available.</p>
+        }
+      }
+
+      @if (tab() === 'errors') {
+        @if (item.errors.length === 0) {
+          <p class="state">No validation errors.</p>
+        } @else {
+          <div class="table-wrap" tabindex="0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Sheet</th>
+                  <th scope="col">Row</th>
+                  <th scope="col">Field</th>
+                  <th scope="col">Code</th>
+                  <th scope="col">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (err of item.errors; track err.id) {
+                  <tr>
+                    <td>{{ err.sheet_name ?? '-' }}</td>
+                    <td>{{ err.row_number ?? '-' }}</td>
+                    <td>{{ err.field ?? '-' }}</td>
+                    <td>{{ err.error_code ?? '-' }}</td>
+                    <td>{{ err.message }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
+
+<app-confirm-dialog
+  [open]="confirmOpen()"
+  [title]="confirmTitle()"
+  [message]="confirmMessage()"
+  [confirmLabel]="confirmLabel()"
+  [busy]="actionBusy()"
+  (confirmed)="onConfirmAction()"
+  (cancelled)="closeConfirm()"
+/>

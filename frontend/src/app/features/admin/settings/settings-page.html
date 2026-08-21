@@ -1,0 +1,68 @@
+<div class="admin-page">
+  <h1 class="admin-page__heading">Settings</h1>
+  <p class="admin-page__lead">Manage the public RUB → CNY exchange rate used by the calculator.</p>
+
+  @if (loading()) {
+    <p class="state" role="status">Loading settings…</p>
+  } @else {
+    @if (error()) {
+      <div class="alert alert--error" role="alert">{{ error() }}</div>
+    }
+    @if (success()) {
+      <div class="alert alert--success" role="status">{{ success() }}</div>
+    }
+
+    @if (settings(); as current) {
+      <dl class="audit">
+        <div>
+          <dt>Last updated</dt>
+          <dd>{{ formatIsoDate(current.updated_at) }}</dd>
+        </div>
+        <div>
+          <dt>Updated by</dt>
+          <dd>
+            @if (current.updated_by; as user) {
+              {{ user.name }} ({{ user.email }})
+            } @else {
+              -
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Current rate</dt>
+          <dd>{{ formatDecimalString(current.rub_to_cny_rate) }}</dd>
+        </div>
+      </dl>
+    }
+
+    <form class="settings-form" [formGroup]="form" (ngSubmit)="openConfirm()" novalidate>
+      <div class="field">
+        <label for="rub_to_cny_rate">RUB → CNY exchange rate</label>
+        <input
+          id="rub_to_cny_rate"
+          type="text"
+          inputmode="decimal"
+          formControlName="rub_to_cny_rate"
+          [attr.aria-invalid]="fieldError() ? true : null"
+          [attr.aria-describedby]="fieldError() ? 'rate-error' : 'rate-hint'"
+        />
+        <p id="rate-hint" class="field__hint">Must be a decimal greater than zero.</p>
+        @if (fieldError(); as message) {
+          <p id="rate-error" class="field__error" role="alert">{{ message }}</p>
+        }
+      </div>
+
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">Save</button>
+    </form>
+  }
+</div>
+
+<app-confirm-dialog
+  [open]="confirmOpen()"
+  title="Confirm exchange rate change"
+  message="Save the new RUB → CNY rate? Guests will see this value on the public calculator."
+  confirmLabel="Save rate"
+  [busy]="saving()"
+  (confirmed)="save()"
+  (cancelled)="closeConfirm()"
+/>

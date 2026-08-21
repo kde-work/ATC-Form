@@ -1,0 +1,61 @@
+<div class="admin-page">
+  <p class="admin-page__back">
+    <a routerLink="/admin/imports">Back to imports</a>
+  </p>
+
+  <h1 class="admin-page__heading">New import</h1>
+  <p class="admin-page__lead">Upload an XLSX tariff workbook.</p>
+
+  <ul class="hints">
+    <li>Accepted format: <strong>.xlsx</strong> only.</li>
+    <li>Maximum size: <strong>{{ maxBytesLabel }}</strong> (checked before upload).</li>
+    <li>Excel formulas are not executed; cell values are imported as-is.</li>
+  </ul>
+
+  <div
+    class="dropzone"
+    [class.dropzone--active]="dragOver()"
+    [class.dropzone--has-file]="!!selectedFile()"
+    role="button"
+    tabindex="0"
+    aria-label="Drop XLSX file here or choose a file"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+    (keydown.enter)="fileInput.click()"
+    (keydown.space)="$event.preventDefault(); fileInput.click()"
+  >
+    <input
+      #fileInput
+      class="dropzone__input"
+      type="file"
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      (change)="onFileInput($event)"
+    />
+
+    @if (selectedFile(); as file) {
+      <p class="dropzone__title">{{ file.name }}</p>
+      <p class="dropzone__meta">{{ file.size }} bytes</p>
+      <button type="button" class="btn btn--ghost" (click)="clearFile()">Choose another file</button>
+    } @else {
+      <p class="dropzone__title">Drag and drop an XLSX file here</p>
+      <p class="dropzone__meta">or</p>
+      <button type="button" class="btn btn--ghost" (click)="fileInput.click()">Choose file</button>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="actions">
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="!selectedFile() || uploading()"
+      (click)="upload()"
+    >
+      {{ uploading() ? 'Uploading…' : 'Upload and process' }}
+    </button>
+  </div>
+</div>

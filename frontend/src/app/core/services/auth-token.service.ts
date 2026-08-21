@@ -2,10 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 const STORAGE_KEY = 'atc_admin_token';
 
-/**
- * Хранение Bearer-токена админки.
- * Полный login — этап 10; здесь только контракт для guard.
- */
+/** Хранение Bearer-токена админки в localStorage. */
 @Injectable({ providedIn: 'root' })
 export class AuthTokenService {
   private readonly tokenSignal = signal<string | null>(this.readStored());
