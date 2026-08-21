@@ -33,6 +33,13 @@ export interface PublicSettingsDto {
   updated_at: string;
 }
 
+/** Ответ GET /calculator/bootstrap: все справочники формы. */
+export interface CalculatorBootstrapDto {
+  platforms: PlatformDto[];
+  delivery_channels: DeliveryChannelDto[];
+  settings: PublicSettingsDto;
+}
+
 export interface NamedCodeDto {
   code: string;
   name: string;

@@ -12,7 +12,11 @@ use App\Models\DeliveryChannel;
 use App\Models\TariffImport;
 use App\Models\TariffRevision;
 use App\Models\User;
+use App\Services\Calculator\CalculatorFormDataCache;
+use App\Services\TariffImport\TariffRevisionActivationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -85,6 +89,106 @@ final class PublicCalculatorApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('rub_to_cny_rate', '0.085000');
         $response->assertJsonStructure(['rub_to_cny_rate', 'updated_at']);
+    }
+
+    public function test_calculator_bootstrap_returns_platforms_channels_and_settings(): void
+    {
+        $revision = $this->createActiveRevision();
+        DeliveryChannel::factory()->ozonBig()->for($revision, 'revision')->create([
+            'code' => 'atc-standard-big',
+            'name' => 'ATC Standard Big',
+            'active' => true,
+        ]);
+        DeliveryChannel::factory()->yandexExpress()->for($revision, 'revision')->create([
+            'code' => 'yandex-express',
+            'name' => 'Express',
+            'active' => true,
+        ]);
+
+        $response = $this->getJson('/api/v1/calculator/bootstrap');
+
+        $response->assertOk();
+        $response->assertJsonPath('platforms.0.code', 'ozon');
+        $response->assertJsonPath('platforms.1.code', 'yandex_market');
+        $response->assertJsonPath('settings.rub_to_cny_rate', '0.085000');
+        $response->assertJsonCount(2, 'delivery_channels');
+        $codes = collect($response->json('delivery_channels'))->pluck('code')->all();
+        $this->assertContains('atc-standard-big', $codes);
+        $this->assertContains('yandex-express', $codes);
+    }
+
+    public function test_form_data_cache_reused_until_forgotten(): void
+    {
+        Cache::flush();
+
+        $this->getJson('/api/v1/calculator/bootstrap')->assertOk();
+        $this->assertTrue(Cache::has(CalculatorFormDataCache::CACHE_KEY));
+
+        $cached = Cache::get(CalculatorFormDataCache::CACHE_KEY);
+        $this->assertIsArray($cached);
+        $this->assertArrayHasKey('platforms', $cached);
+
+        // Повторный запрос не должен падать и должен читать тот же ключ.
+        $this->getJson('/api/v1/platforms')->assertOk();
+        $this->assertTrue(Cache::has(CalculatorFormDataCache::CACHE_KEY));
+    }
+
+    public function test_form_data_cache_invalidated_after_exchange_rate_change(): void
+    {
+        Cache::flush();
+        $this->getJson('/api/v1/settings/public')->assertJsonPath('rub_to_cny_rate', '0.085000');
+        $this->assertTrue(Cache::has(CalculatorFormDataCache::CACHE_KEY));
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->putJson('/api/v1/admin/settings/exchange-rate', [
+            'rub_to_cny_rate' => '0.091',
+        ])->assertOk();
+
+        $this->assertFalse(Cache::has(CalculatorFormDataCache::CACHE_KEY));
+
+        $this->getJson('/api/v1/settings/public')
+            ->assertOk()
+            ->assertJsonPath('rub_to_cny_rate', '0.091000');
+    }
+
+    public function test_form_data_cache_invalidated_after_revision_activation(): void
+    {
+        Cache::flush();
+
+        $user = User::factory()->create();
+        $firstImport = TariffImport::factory()->validated()->for($user, 'uploadedBy')->create();
+        $firstRevision = TariffRevision::factory()->active()->for($firstImport, 'import')->create([
+            'version_number' => 1,
+        ]);
+        DeliveryChannel::factory()->ozonPhysical()->for($firstRevision, 'revision')->create([
+            'code' => 'channel-v1',
+            'name' => 'Channel V1',
+            'active' => true,
+        ]);
+
+        $this->getJson('/api/v1/delivery-channels?platform=ozon')
+            ->assertOk()
+            ->assertJsonPath('0.code', 'channel-v1');
+        $this->assertTrue(Cache::has(CalculatorFormDataCache::CACHE_KEY));
+
+        $secondImport = TariffImport::factory()->validated()->for($user, 'uploadedBy')->create();
+        $secondRevision = TariffRevision::factory()->draft()->for($secondImport, 'import')->create([
+            'version_number' => 2,
+        ]);
+        DeliveryChannel::factory()->ozonPhysical()->for($secondRevision, 'revision')->create([
+            'code' => 'channel-v2',
+            'name' => 'Channel V2',
+            'active' => true,
+        ]);
+
+        $this->app->make(TariffRevisionActivationService::class)->activate($secondImport, $user);
+
+        $this->assertFalse(Cache::has(CalculatorFormDataCache::CACHE_KEY));
+        $this->getJson('/api/v1/delivery-channels?platform=ozon')
+            ->assertOk()
+            ->assertJsonPath('0.code', 'channel-v2');
     }
 
     public function test_calculation_happy_path_ozon_big(): void

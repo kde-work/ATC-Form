@@ -7,12 +7,14 @@ use App\Http\Controllers\Api\V1\Admin\ImportController;
 use App\Http\Controllers\Api\V1\Admin\SettingsController;
 use App\Http\Controllers\Api\V1\Admin\TariffController;
 use App\Http\Controllers\Api\V1\CalculationController;
+use App\Http\Controllers\Api\V1\CalculatorBootstrapController;
 use App\Http\Controllers\Api\V1\DeliveryChannelController;
 use App\Http\Controllers\Api\V1\PlatformController;
 use App\Http\Controllers\Api\V1\PublicSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
+    Route::get('calculator/bootstrap', [CalculatorBootstrapController::class, 'show']);
     Route::get('platforms', [PlatformController::class, 'index']);
     Route::get('delivery-channels', [DeliveryChannelController::class, 'index']);
     Route::get('settings/public', [PublicSettingsController::class, 'show']);

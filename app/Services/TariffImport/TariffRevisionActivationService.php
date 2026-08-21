@@ -10,6 +10,7 @@ use App\Exceptions\TariffRevisionActivationException;
 use App\Models\TariffImport;
 use App\Models\TariffRevision;
 use App\Models\User;
+use App\Services\Calculator\CalculatorFormDataCache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -17,6 +18,11 @@ use Illuminate\Support\Facades\DB;
  */
 final class TariffRevisionActivationService
 {
+    public function __construct(
+        private readonly CalculatorFormDataCache $formDataCache,
+    ) {
+    }
+
     /**
      * Activate: текущая active -> archived, выбранная draft -> active.
      */
@@ -43,7 +49,10 @@ final class TariffRevisionActivationService
             throw new TariffRevisionActivationException('Cannot activate an empty revision.');
         }
 
-        return $this->switchActive($revision, $actor, markImportActivated: true);
+        $result = $this->switchActive($revision, $actor, markImportActivated: true);
+        $this->formDataCache->forget();
+
+        return $result;
     }
 
     /**
@@ -59,7 +68,10 @@ final class TariffRevisionActivationService
             throw new TariffRevisionActivationException('Cannot activate an empty revision.');
         }
 
-        return $this->switchActive($revision, $actor, markImportActivated: false);
+        $result = $this->switchActive($revision, $actor, markImportActivated: false);
+        $this->formDataCache->forget();
+
+        return $result;
     }
 
     private function switchActive(

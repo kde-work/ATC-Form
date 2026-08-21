@@ -61,8 +61,10 @@ export class CalculatorPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly platforms = signal<PlatformDto[]>([]);
+  /** Все каналы из bootstrap; фильтр по platform на клиенте. */
+  private readonly allChannels = signal<DeliveryChannelDto[]>([]);
   readonly channels = signal<DeliveryChannelDto[]>([]);
-  readonly channelsLoading = signal(false);
+  readonly bootstrapLoading = signal(true);
   readonly submitting = signal(false);
   readonly bootstrapError = signal<string | null>(null);
   readonly formError = signal<string | null>(null);
@@ -105,12 +107,17 @@ export class CalculatorPage implements OnInit {
 
   ngOnInit(): void {
     this.api
-      .getPlatforms()
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .getBootstrap()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.bootstrapLoading.set(false)),
+      )
       .subscribe({
-        next: (platforms) => {
-          this.platforms.set(platforms);
+        next: (bootstrap) => {
+          this.platforms.set(bootstrap.platforms);
+          this.allChannels.set(bootstrap.delivery_channels);
           this.bootstrapError.set(null);
+          this.applyChannelFilter(this.form.controls.platform.value);
         },
         error: (error: unknown) => {
           this.bootstrapError.set(this.errorMessage(error));
@@ -198,31 +205,22 @@ export class CalculatorPage implements OnInit {
 
   private onPlatformChanged(platform: PlatformCode | ''): void {
     this.selectedPlatform.set(platform);
-    this.channels.set([]);
     this.result.set(null);
     this.form.controls.delivery_channel_code.setValue('');
     this.showYandexDimensions.set(false);
     this.applyPlatformValidators();
+    this.applyChannelFilter(platform);
+  }
 
+  private applyChannelFilter(platform: PlatformCode | ''): void {
     if (platform === '') {
+      this.channels.set([]);
       return;
     }
 
-    this.channelsLoading.set(true);
-    this.api
-      .getDeliveryChannels(platform)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.channelsLoading.set(false)),
-      )
-      .subscribe({
-        next: (channels) => {
-          this.channels.set(channels);
-        },
-        error: (error: unknown) => {
-          this.formError.set(this.errorMessage(error));
-        },
-      });
+    this.channels.set(
+      this.allChannels().filter((channel) => channel.platform === platform),
+    );
   }
 
   private applyPlatformValidators(): void {

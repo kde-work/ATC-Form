@@ -9,17 +9,17 @@ use App\Services\Calculator\CalculatorFormDataCache;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Публичный список платформ калькулятора.
+ * Презагрузка всех справочников публичной формы калькулятора.
  */
-final class PlatformController extends Controller
+final class CalculatorBootstrapController extends Controller
 {
     public function __construct(
         private readonly CalculatorFormDataCache $formDataCache,
     ) {
     }
 
-    public function index(): JsonResponse
+    public function show(): JsonResponse
     {
-        return response()->json($this->formDataCache->platforms());
+        return response()->json($this->formDataCache->bootstrap());
     }
 }

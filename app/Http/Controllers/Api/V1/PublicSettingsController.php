@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Api\V1\PublicSettingsResource;
-use App\Services\ActiveTariffQuery;
+use App\Services\Calculator\CalculatorFormDataCache;
+use Illuminate\Http\JsonResponse;
 
 /**
- * Публичные настройки (курс). Только чтение.
+ * Публичные настройки (курс). Только чтение, из кэша справочников формы.
  */
 final class PublicSettingsController extends Controller
 {
     public function __construct(
-        private readonly ActiveTariffQuery $activeTariffQuery,
+        private readonly CalculatorFormDataCache $formDataCache,
     ) {
     }
 
-    public function show(): PublicSettingsResource
+    public function show(): JsonResponse
     {
-        return new PublicSettingsResource($this->activeTariffQuery->exchangeRateSetting());
+        return response()->json($this->formDataCache->publicSettings());
     }
 }

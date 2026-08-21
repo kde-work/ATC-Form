@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\Admin\AdminSettingsResource;
 use App\Models\AppSetting;
 use App\Models\User;
 use App\Services\ActiveTariffQuery;
+use App\Services\Calculator\CalculatorFormDataCache;
 use Illuminate\Http\Request;
 
 /**
@@ -19,6 +20,7 @@ final class SettingsController extends Controller
 {
     public function __construct(
         private readonly ActiveTariffQuery $activeTariffQuery,
+        private readonly CalculatorFormDataCache $formDataCache,
     ) {
     }
 
@@ -44,6 +46,7 @@ final class SettingsController extends Controller
         $setting->updated_by_user_id = $user->id;
         $setting->save();
         $setting->load('updatedBy');
+        $this->formDataCache->forget();
 
         return new AdminSettingsResource($setting);
     }

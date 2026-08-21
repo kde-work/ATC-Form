@@ -108,12 +108,22 @@ Angular:
 
 | Метод | Путь | Поведение |
 |-------|------|-----------|
-| GET | `/api/v1/platforms` | Фиксированный список: `ozon`, `yandex_market` |
-| GET | `/api/v1/delivery-channels?platform=` | `active=true` каналы **активной** ревизии. Нет active-ревизии: пустой массив `[]`, не ошибка |
-| GET | `/api/v1/settings/public` | `{ "rub_to_cny_rate": "0.085000", "updated_at": "..." }` |
-| POST | `/api/v1/calculations` | Расчёт. Канал не найден в active-ревизии: 422. Не eligible: 200, `eligible: false`, `final_cost: null` |
+| GET | `/api/v1/calculator/bootstrap` | Один ответ: platforms + все active delivery_channels активной ревизии + public settings. Для презагрузки формы `/calculator` |
+| GET | `/api/v1/platforms` | Фиксированный список: `ozon`, `yandex_market` (из того же кэша) |
+| GET | `/api/v1/delivery-channels?platform=` | `active=true` каналы **активной** ревизии (фильтр из кэша). Нет active-ревизии: пустой массив `[]`, не ошибка |
+| GET | `/api/v1/settings/public` | `{ "rub_to_cny_rate": "0.085000", "updated_at": "..." }` (из того же кэша) |
+| POST | `/api/v1/calculations` | Расчёт. Канал не найден в active-ревизии: 422. Не eligible: 200, `eligible: false`, `final_cost: null`. Читает тарифы из БД, не из кэша формы |
 
 Если каналов ещё нет (свежий seed без импорта), калькулятор показывает пустой select. Это штатно.
+
+### Кэш справочников формы
+
+- Ключ: `calculator.form_data` (`CalculatorFormDataCache`).
+- Store: `CACHE_STORE` (в проекте `file`, Redis нет; в тестах `array`).
+- Содержимое: только справочники select-ов и публичный курс. Полные тарифные строки для формул в кэш не кладём.
+- TTL: `rememberForever` до явной инвалидации.
+- Инвалидация: activate/rollback ревизии, смена `rub_to_cny_rate`.
+- Angular `/calculator` при открытии вызывает bootstrap один раз и фильтрует каналы по platform на клиенте.
 
 ## Admin endpoints
 

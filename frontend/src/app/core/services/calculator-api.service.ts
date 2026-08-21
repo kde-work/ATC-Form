@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   CalculationRequestDto,
   CalculationResultDto,
+  CalculatorBootstrapDto,
   DeliveryChannelDto,
   PlatformCode,
   PlatformDto,
@@ -16,6 +17,11 @@ import {
 export class CalculatorApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
+
+  /** Презагрузка platforms, всех каналов и публичных настроек. */
+  getBootstrap(): Observable<CalculatorBootstrapDto> {
+    return this.http.get<CalculatorBootstrapDto>(`${this.baseUrl}/calculator/bootstrap`);
+  }
 
   getPlatforms(): Observable<PlatformDto[]> {
     return this.http.get<PlatformDto[]>(`${this.baseUrl}/platforms`);

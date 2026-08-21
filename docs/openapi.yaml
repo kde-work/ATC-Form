@@ -16,6 +16,41 @@ tags:
   - name: Admin Tariffs
   - name: Admin Settings
 paths:
+  /calculator/bootstrap:
+    get:
+      tags: [Public]
+      summary: Preload all calculator form reference data
+      description: |
+        Single payload for `/calculator`: platforms, all active delivery channels
+        of the active revision, and public exchange rate. Served from file/DB cache
+        (`CACHE_STORE`), invalidated on tariff activation/rollback and rate change.
+      operationId: getCalculatorBootstrap
+      responses:
+        '200':
+          description: Form bootstrap payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculatorBootstrap'
+              example:
+                platforms:
+                  - code: ozon
+                    name: Ozon
+                  - code: yandex_market
+                    name: Yandex Market
+                delivery_channels:
+                  - code: atc-standard-big
+                    name: ATC Standard Big
+                    platform: ozon
+                    currency: CNY
+                  - code: yandex-express
+                    name: Express
+                    platform: yandex_market
+                    currency: RUB
+                settings:
+                  rub_to_cny_rate: '0.085000'
+                  updated_at: '2026-08-21T21:00:00+00:00'
+
   /platforms:
     get:
       tags: [Public]
@@ -496,6 +531,21 @@ components:
           $ref: '#/components/schemas/PlatformCode'
         name:
           type: string
+
+    CalculatorBootstrap:
+      type: object
+      required: [platforms, delivery_channels, settings]
+      properties:
+        platforms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Platform'
+        delivery_channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryChannel'
+        settings:
+          $ref: '#/components/schemas/PublicSettings'
 
     DeliveryChannel:
       type: object

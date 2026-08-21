@@ -44,7 +44,7 @@
             "
           >
             <option value="" disabled>
-              @if (channelsLoading()) {
+              @if (bootstrapLoading()) {
                 Loading channels…
               } @else if (!selectedPlatform()) {
                 Select platform first
@@ -59,7 +59,7 @@
             }
           </select>
           <p id="channel-hint" class="field__hint">
-            Channel list loads after platform is selected.
+            Channels are preloaded with the form; filtered after platform is selected.
           </p>
           @if (fieldError('delivery_channel_code'); as message) {
             <p id="channel-error" class="field__error" role="alert">{{ message }}</p>
