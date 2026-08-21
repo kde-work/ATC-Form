@@ -58,6 +58,24 @@ final class ApiErrorRenderer
             );
         }
 
+        if ($exception instanceof TariffRevisionActivationException) {
+            return $this->response(
+                $exception->getMessage() !== '' ? $exception->getMessage() : 'Import cannot be activated.',
+                'import_not_activatable',
+                422,
+                ['_' => [$exception->getMessage()]],
+            );
+        }
+
+        if ($exception instanceof TariffImportFileException) {
+            return $this->response(
+                $exception->getMessage() !== '' ? $exception->getMessage() : 'Import file is invalid.',
+                'import_file_error',
+                422,
+                ['file' => [$exception->getMessage()]],
+            );
+        }
+
         $status = $exception instanceof HttpExceptionInterface
             ? $exception->getStatusCode()
             : 500;
