@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Schema;
  * @property int|null $activated_by_user_id
  * @property int|null $active_guard
  * @property array<string, mixed>|null $metadata_json
+ * @property \Illuminate\Support\Carbon|null $activated_at
+ * @property \Illuminate\Support\Carbon|null $archived_at
  */
 class TariffRevision extends Model
 {

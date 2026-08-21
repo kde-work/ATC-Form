@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $file_size_bytes
  * @property ImportStatus $status
  * @property array<string, mixed>|null $summary_json
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $finished_at
  */
 class TariffImport extends Model
 {
