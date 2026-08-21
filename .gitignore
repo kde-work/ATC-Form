@@ -26,6 +26,7 @@ yarn-error.log
 Thumbs.db
 *.log
 .tmp
+/database/database.sqlite
 
 # Локальные переопределения Docker, не для репозитория
 docker-compose.override.yml

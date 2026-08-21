@@ -37,8 +37,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
     stdin_open: true
     tty: true
     restart: unless-stopped
@@ -63,21 +61,6 @@ services:
       retries: 15
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    container_name: atc-form-redis
-    command: redis-server --appendonly yes
-    ports:
-      - "${APP_BIND_IP:-127.0.0.5}:${FORWARD_REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    restart: unless-stopped
-
   mailpit:
     image: axllent/mailpit
     container_name: atc-form-mailpit
@@ -99,5 +82,4 @@ services:
 
 volumes:
   mysql-data:
-  redis-data:
   composer-cache:

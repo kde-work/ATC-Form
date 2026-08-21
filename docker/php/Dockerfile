@@ -21,7 +21,7 @@ RUN apt-get update \
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-# Расширения для Laravel 13: pdo_mysql, redis, gd, intl, zip, pcntl, xdebug.
+# Расширения для Laravel 13: pdo_mysql, gd, intl, zip, pcntl, xdebug.
 RUN install-php-extensions \
         bcmath \
         exif \
@@ -30,7 +30,6 @@ RUN install-php-extensions \
         opcache \
         pcntl \
         pdo_mysql \
-        redis \
         zip \
         xdebug \
         @composer

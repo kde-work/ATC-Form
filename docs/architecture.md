@@ -17,7 +17,7 @@ Web-приложение считает стоимость доставки ATC 
 - `docker/`: PHP-FPM, nginx;
 - `docs/`: соглашения.
 
-Локальный стек уже задан Docker Compose: PHP 8.5, nginx, MySQL 8.4, Redis, Mailpit, Node (profile `frontend`).
+Локальный стек уже задан Docker Compose: PHP 8.5, nginx, MySQL 8.4, Mailpit, Node (profile `frontend`). Redis в проекте нет: сессии и кэш на `file`, очередь `sync`.
 
 ## Модули
 
@@ -361,6 +361,7 @@ Yandex: `billed = ceil(weight / increment) * increment`, cost в RUB, CNY = RUB 
 ## Принятые отклонения от ТЗ Perplexity
 
 - БД: MySQL 8.4, не PostgreSQL (уже в Docker Compose).
+- Redis нет: сессии и кэш `file`, очередь `sync` (импорт MVP и так синхронный).
 - Laravel 13 в корне репозитория; если каркас недоступен: ближайший стабильный 12+ на PHP 8.5, версия в README.
 - Auth: Sanctum personal access token (Bearer), не cookie SPA.
 - Импорт MVP синхронный, с отдельным Action/Job под очередь.
