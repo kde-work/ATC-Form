@@ -60,8 +60,13 @@ final class PricingService
         string $rubToCnyRate,
         EligibilityResult $eligibility,
     ): PricingResult {
-        assert($input->lengthCm !== null && $input->widthCm !== null && $input->heightCm !== null);
-        assert($input->orderCost !== null && $input->orderCostCurrency !== null);
+        if ($input->lengthCm === null || $input->widthCm === null || $input->heightCm === null) {
+            throw new InvalidArgumentException('Ozon calculation requires length, width and height.');
+        }
+
+        if ($input->orderCost === null || $input->orderCostCurrency === null) {
+            throw new InvalidArgumentException('Ozon calculation requires order cost and currency.');
+        }
 
         $physical = Decimal::normalize($input->physicalWeightGrams, 8);
         $volumetric = null;

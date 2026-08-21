@@ -76,7 +76,9 @@ final class EligibilityValidationService
      */
     private function validateOzonDimensions(DeliveryChannel $channel, CalculationInput $input, array &$errors): void
     {
-        assert($input->lengthCm !== null && $input->widthCm !== null && $input->heightCm !== null);
+        if ($input->lengthCm === null || $input->widthCm === null || $input->heightCm === null) {
+            throw new InvalidArgumentException('Ozon calculation requires length, width and height.');
+        }
 
         $this->validateDimensionLimits(
             $channel,
