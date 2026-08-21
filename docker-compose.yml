@@ -33,6 +33,7 @@ services:
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
     volumes:
       - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/zz-local.ini:ro
       - composer-cache:/tmp/composer
     depends_on:
       mysql:
@@ -72,6 +73,9 @@ services:
     image: node:22-alpine
     container_name: atc-form-node
     working_dir: /var/www/html
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
     volumes:
       - ./:/var/www/html
     ports:
