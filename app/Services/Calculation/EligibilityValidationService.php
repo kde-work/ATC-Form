@@ -225,18 +225,18 @@ final class EligibilityValidationService
             return;
         }
 
-        if ($belowMin && $min !== null) {
+        if ($belowMin) {
             $errors[] = sprintf(
                 'Order cost is below the minimum allowed value of %s %s.',
-                Decimal::formatMoneyDisplay($min),
+                Decimal::formatMoneyDisplay((string) $min),
                 $currency
             );
         }
 
-        if ($aboveMax && $max !== null) {
+        if ($aboveMax) {
             $errors[] = sprintf(
                 'Order cost exceeds the maximum allowed value of %s %s.',
-                Decimal::formatMoneyDisplay($max),
+                Decimal::formatMoneyDisplay((string) $max),
                 $currency
             );
         }

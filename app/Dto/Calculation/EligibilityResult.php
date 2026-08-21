@@ -28,8 +28,8 @@ final readonly class EligibilityResult
     {
         return new self(
             eligible: $errors === [],
-            errors: array_values($errors),
-            warnings: array_values($warnings),
+            errors: $errors,
+            warnings: $warnings,
         );
     }
 }

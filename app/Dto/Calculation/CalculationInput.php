@@ -85,9 +85,11 @@ final readonly class CalculationInput
             throw new InvalidCalculationInputException($errors);
         }
 
-        assert($platform instanceof Platform);
-        assert(is_string($channelCode) && $channelCode !== '');
-        assert(is_string($physicalWeight));
+        if ($platform === null || $channelCode === null || $physicalWeight === null) {
+            throw new InvalidCalculationInputException([
+                '_' => ['The calculation input is incomplete.'],
+            ]);
+        }
 
         return new self(
             platform: $platform,
