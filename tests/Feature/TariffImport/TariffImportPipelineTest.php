@@ -100,9 +100,51 @@ final class TariffImportPipelineTest extends TestCase
 
         $this->assertSame(ImportStatus::ValidationFailed, $import->status);
         $this->assertSame(RevisionStatus::Invalid, $import->revision?->status);
-        $this->assertTrue(
-            $import->errors()->where('field', 'code')->where('error_code', 'duplicate_code')->exists(),
+        $error = $import->errors()->where('field', 'code')->where('error_code', 'duplicate_code')->first();
+        $this->assertNotNull($error);
+        $this->assertNotNull($error->sheet_name);
+        $this->assertNotNull($error->row_number);
+        $this->assertStringContainsString('duplicate channel code', $error->message);
+    }
+
+    public function test_calculator_sees_only_active_revision_after_activation(): void
+    {
+        $user = User::factory()->create();
+        $service = $this->service();
+        $activation = $this->app->make(TariffRevisionActivationService::class);
+        $activeQuery = $this->app->make(ActiveTariffQuery::class);
+
+        $firstPath = $this->fixturesDir . DIRECTORY_SEPARATOR . 'calc-first.xlsx';
+        TariffsXlsxFixtureBuilder::write($firstPath);
+        $firstImport = $service->uploadAndProcess(
+            new UploadedFile($firstPath, 'calc-first.xlsx', null, null, true),
+            $user,
         );
+        $activation->activate($firstImport, $user);
+
+        $before = $activeQuery->findActiveChannel(Platform::Ozon, 'atc-standard-extra-small');
+        $this->assertNotNull($before);
+        $this->assertSame('3.370000', (string) $before->fixed_fee);
+
+        $secondRows = TariffsXlsxFixtureBuilder::defaultOzonRows();
+        $secondRows[1]['rate'] = '¥ 9.99 + ¥ 0.0111/1 g';
+        $secondPath = $this->fixturesDir . DIRECTORY_SEPARATOR . 'calc-second.xlsx';
+        TariffsXlsxFixtureBuilder::write($secondPath, $secondRows);
+        $secondImport = $service->uploadAndProcess(
+            new UploadedFile($secondPath, 'calc-second.xlsx', null, null, true),
+            $user,
+        );
+
+        // Draft ещё не active: калькулятор видит старые ставки
+        $stillOld = $activeQuery->findActiveChannel(Platform::Ozon, 'atc-standard-extra-small');
+        $this->assertNotNull($stillOld);
+        $this->assertSame('3.370000', (string) $stillOld->fixed_fee);
+        $this->assertSame(ImportStatus::Validated, $secondImport->status);
+
+        $activation->activate($secondImport, $user);
+        $updated = $activeQuery->findActiveChannel(Platform::Ozon, 'atc-standard-extra-small');
+        $this->assertNotNull($updated);
+        $this->assertSame('9.990000', (string) $updated->fixed_fee);
     }
 
     public function test_broken_rate_fails_validation_with_row(): void

@@ -183,6 +183,135 @@ final class PublicCalculatorApiTest extends TestCase
         $response->assertJsonPath('exchange_rate', '0.085000');
     }
 
+    public function test_calculation_yandex_express_550(): void
+    {
+        $revision = $this->createActiveRevision();
+        DeliveryChannel::factory()->yandexExpress()->for($revision, 'revision')->create();
+
+        $response = $this->postJson('/api/v1/calculations', [
+            'platform' => 'yandex_market',
+            'delivery_channel_code' => 'express',
+            'physical_weight_grams' => '550',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('eligible', true);
+        $response->assertJsonPath('billed_weight_grams', '600.000');
+        $response->assertJsonPath('final_cost', '670.20');
+        $response->assertJsonPath('final_cost_cny', '56.9670');
+    }
+
+    public function test_calculation_ozon_extra_small_physical_weight(): void
+    {
+        $revision = $this->createActiveRevision();
+        DeliveryChannel::factory()->ozonPhysical()->for($revision, 'revision')->create([
+            'code' => 'atc-express-extra-small',
+            'name' => 'ATC Express Extra Small',
+            'fixed_fee' => '3.370000',
+            'per_gram_fee' => '0.05050000',
+            'min_weight_grams' => '1.000',
+            'max_weight_grams' => '2000.000',
+            'max_length_cm' => '60.000',
+            'max_sum_dimensions_cm' => '150.000',
+            'min_order_cost_cny' => '135.0100',
+            'max_order_cost_cny' => '635.0000',
+        ]);
+
+        $response = $this->postJson('/api/v1/calculations', [
+            'platform' => 'ozon',
+            'delivery_channel_code' => 'atc-express-extra-small',
+            'physical_weight_grams' => '1000',
+            'length_cm' => '50',
+            'width_cm' => '40',
+            'height_cm' => '30',
+            'order_cost' => '200',
+            'order_cost_currency' => 'CNY',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('eligible', true);
+        $response->assertJsonPath('chargeable_weight_grams', '1000.000');
+        $response->assertJsonPath('volumetric_weight_grams', null);
+        $response->assertJsonPath('final_cost', '53.87');
+    }
+
+    public function test_calculation_ozon_order_cost_rub_converted_to_cny(): void
+    {
+        $revision = $this->createActiveRevision();
+        DeliveryChannel::factory()->ozonPhysical()->for($revision, 'revision')->create([
+            'code' => 'atc-express-extra-small',
+            'name' => 'ATC Express Extra Small',
+            'fixed_fee' => '3.370000',
+            'per_gram_fee' => '0.05050000',
+            'min_order_cost_cny' => '135.0100',
+            'max_order_cost_cny' => '635.0000',
+        ]);
+
+        $response = $this->postJson('/api/v1/calculations', [
+            'platform' => 'ozon',
+            'delivery_channel_code' => 'atc-express-extra-small',
+            'physical_weight_grams' => '500',
+            'length_cm' => '30',
+            'width_cm' => '20',
+            'height_cm' => '20',
+            'order_cost' => '2000',
+            'order_cost_currency' => 'RUB',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('eligible', true);
+        $response->assertJsonPath('order_cost_currency', 'RUB');
+        $response->assertJsonPath('order_cost_cny', '170.0000');
+    }
+
+    public function test_calculation_uses_only_active_revision_rates(): void
+    {
+        $user = User::factory()->create();
+
+        $activeImport = TariffImport::factory()->validated()->for($user, 'uploadedBy')->create();
+        $activeRevision = TariffRevision::factory()->active()->for($activeImport, 'import')->create([
+            'version_number' => 1,
+        ]);
+        DeliveryChannel::factory()->ozonPhysical()->for($activeRevision, 'revision')->create([
+            'code' => 'atc-express-extra-small',
+            'name' => 'ATC Express Extra Small',
+            'fixed_fee' => '3.370000',
+            'per_gram_fee' => '0.05050000',
+            'min_order_cost_cny' => '135.0100',
+            'max_order_cost_cny' => '635.0000',
+        ]);
+
+        $draftImport = TariffImport::factory()->validated()->for($user, 'uploadedBy')->create();
+        $draftRevision = TariffRevision::factory()->draft()->for($draftImport, 'import')->create([
+            'version_number' => 2,
+        ]);
+        DeliveryChannel::factory()->ozonPhysical()->for($draftRevision, 'revision')->create([
+            'code' => 'atc-express-extra-small',
+            'name' => 'ATC Express Extra Small',
+            'fixed_fee' => '99.990000',
+            'per_gram_fee' => '0.99990000',
+            'min_order_cost_cny' => '135.0100',
+            'max_order_cost_cny' => '635.0000',
+        ]);
+
+        $response = $this->postJson('/api/v1/calculations', [
+            'platform' => 'ozon',
+            'delivery_channel_code' => 'atc-express-extra-small',
+            'physical_weight_grams' => '1000',
+            'length_cm' => '30',
+            'width_cm' => '20',
+            'height_cm' => '20',
+            'order_cost' => '200',
+            'order_cost_currency' => 'CNY',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('eligible', true);
+        // Ставки только из active, не из draft 99.99 / 0.9999
+        $response->assertJsonPath('final_cost', '53.87');
+        $response->assertJsonPath('fixed_fee', '3.37');
+    }
+
     public function test_delivery_channels_requires_platform(): void
     {
         $response = $this->getJson('/api/v1/delivery-channels');
