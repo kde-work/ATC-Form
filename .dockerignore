@@ -1,0 +1,10 @@
+.git
+.idea
+.vscode
+.cursor
+node_modules
+vendor
+storage/logs
+bootstrap/cache
+.env
+*.log
