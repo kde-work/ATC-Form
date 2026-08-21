@@ -1,0 +1,236 @@
+<div class="page">
+  <app-site-header />
+
+  <main>
+    <h1 class="page__heading">Calculate delivery cost</h1>
+    <p class="page__lead">
+      Enter shipment details. Pricing is calculated by the server; this form only validates inputs.
+    </p>
+
+    @if (bootstrapError()) {
+      <div class="alert alert--error" role="alert">
+        {{ bootstrapError() }}
+      </div>
+    }
+
+    <form class="calc-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="calc-form__row">
+        <div class="field">
+          <label for="platform">Platform</label>
+          <select
+            id="platform"
+            formControlName="platform"
+            [attr.aria-invalid]="fieldError('platform') ? true : null"
+            [attr.aria-describedby]="fieldError('platform') ? 'platform-error' : null"
+          >
+            <option value="" disabled>Select platform</option>
+            @for (platform of platforms(); track platform.code) {
+              <option [value]="platform.code">{{ platform.name }}</option>
+            }
+          </select>
+          @if (fieldError('platform'); as message) {
+            <p id="platform-error" class="field__error" role="alert">{{ message }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="delivery_channel_code">Delivery channel</label>
+          <select
+            id="delivery_channel_code"
+            formControlName="delivery_channel_code"
+            [attr.aria-invalid]="fieldError('delivery_channel_code') ? true : null"
+            [attr.aria-describedby]="
+              fieldError('delivery_channel_code') ? 'channel-error' : 'channel-hint'
+            "
+          >
+            <option value="" disabled>
+              @if (channelsLoading()) {
+                Loading channels…
+              } @else if (!selectedPlatform()) {
+                Select platform first
+              } @else if (channels().length === 0) {
+                No active channels
+              } @else {
+                Select channel
+              }
+            </option>
+            @for (channel of channels(); track channel.code) {
+              <option [value]="channel.code">{{ channel.name }}</option>
+            }
+          </select>
+          <p id="channel-hint" class="field__hint">
+            Channel list loads after platform is selected.
+          </p>
+          @if (fieldError('delivery_channel_code'); as message) {
+            <p id="channel-error" class="field__error" role="alert">{{ message }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="calc-form__row">
+        <div class="field">
+          <label for="physical_weight_grams">Physical weight, g</label>
+          <input
+            id="physical_weight_grams"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            formControlName="physical_weight_grams"
+            [attr.aria-invalid]="fieldError('physical_weight_grams') ? true : null"
+            [attr.aria-describedby]="
+              fieldError('physical_weight_grams') ? 'weight-error' : null
+            "
+          />
+          @if (fieldError('physical_weight_grams'); as message) {
+            <p id="weight-error" class="field__error" role="alert">{{ message }}</p>
+          }
+        </div>
+      </div>
+
+      @if (isYandex()) {
+        <div class="calc-form__toggle-row">
+          <button
+            type="button"
+            class="link-button"
+            (click)="toggleYandexDimensions()"
+            [attr.aria-expanded]="showYandexDimensions()"
+          >
+            @if (showYandexDimensions()) {
+              Hide dimensions
+            } @else {
+              Show dimensions (optional)
+            }
+          </button>
+        </div>
+      }
+
+      @if (showDimensions()) {
+        <fieldset class="calc-form__fieldset">
+          <legend>Dimensions, cm</legend>
+          <div class="calc-form__row calc-form__row--3">
+            <div class="field">
+              <label for="length_cm">Length</label>
+              <input
+                id="length_cm"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                formControlName="length_cm"
+                [attr.aria-invalid]="fieldError('length_cm') ? true : null"
+                [attr.aria-describedby]="fieldError('length_cm') ? 'length-error' : null"
+              />
+              @if (fieldError('length_cm'); as message) {
+                <p id="length-error" class="field__error" role="alert">{{ message }}</p>
+              }
+            </div>
+            <div class="field">
+              <label for="width_cm">Width</label>
+              <input
+                id="width_cm"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                formControlName="width_cm"
+                [attr.aria-invalid]="fieldError('width_cm') ? true : null"
+                [attr.aria-describedby]="fieldError('width_cm') ? 'width-error' : null"
+              />
+              @if (fieldError('width_cm'); as message) {
+                <p id="width-error" class="field__error" role="alert">{{ message }}</p>
+              }
+            </div>
+            <div class="field">
+              <label for="height_cm">Height</label>
+              <input
+                id="height_cm"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                formControlName="height_cm"
+                [attr.aria-invalid]="fieldError('height_cm') ? true : null"
+                [attr.aria-describedby]="fieldError('height_cm') ? 'height-error' : null"
+              />
+              @if (fieldError('height_cm'); as message) {
+                <p id="height-error" class="field__error" role="alert">{{ message }}</p>
+              }
+            </div>
+          </div>
+        </fieldset>
+      }
+
+      @if (isOzon() || isYandex()) {
+        <div class="calc-form__row calc-form__row--order">
+          <div class="field">
+            <label for="order_cost">
+              Order cost
+              @if (isYandex()) {
+                <span class="field__optional">(optional)</span>
+              }
+            </label>
+            <input
+              id="order_cost"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              formControlName="order_cost"
+              [attr.aria-invalid]="fieldError('order_cost') ? true : null"
+              [attr.aria-describedby]="fieldError('order_cost') ? 'order-cost-error' : null"
+            />
+            @if (fieldError('order_cost'); as message) {
+              <p id="order-cost-error" class="field__error" role="alert">{{ message }}</p>
+            }
+          </div>
+
+          <fieldset class="field field--currency">
+            <legend>Currency</legend>
+            <div class="currency-toggle" role="radiogroup" aria-label="Order cost currency">
+              <label class="currency-toggle__option">
+                <input type="radio" formControlName="order_cost_currency" value="CNY" />
+                <span>CNY</span>
+              </label>
+              <label class="currency-toggle__option">
+                <input type="radio" formControlName="order_cost_currency" value="RUB" />
+                <span>RUB</span>
+              </label>
+            </div>
+            @if (fieldError('order_cost_currency'); as message) {
+              <p class="field__error" role="alert">{{ message }}</p>
+            }
+          </fieldset>
+        </div>
+      }
+
+      @if (formError()) {
+        <div class="alert alert--error" role="alert">
+          {{ formError() }}
+          @if (fieldErrors()['_']; as general) {
+            <ul>
+              @for (item of general; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <div class="calc-form__actions">
+        <button type="submit" class="btn-primary" [disabled]="submitting()">
+          @if (submitting()) {
+            Calculating…
+          } @else {
+            Calculate
+          }
+        </button>
+      </div>
+    </form>
+
+    @if (!result() && !submitting() && !formError()) {
+      <p class="empty-hint" aria-live="polite">
+        Submit the form to see the delivery cost breakdown.
+      </p>
+    }
+
+    @if (result(); as calculation) {
+      <app-result-card [result]="calculation" />
+    }
+  </main>
+</div>

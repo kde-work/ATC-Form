@@ -1,0 +1,50 @@
+:root {
+  --font-sans: 'Inter Variable', 'Inter', sans-serif;
+  --color-bg: #f3f5f7;
+  --color-surface: #ffffff;
+  --color-text: #15202b;
+  --color-text-muted: #5b6b7c;
+  --color-border: #d7dee7;
+  --color-border-strong: #b7c2cf;
+  --color-accent: #0f4c81;
+  --color-accent-hover: #0c3d67;
+  --color-accent-soft: #e7f0f8;
+  --color-focus: #1f6fbf;
+  --color-success: #1f7a45;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+  --color-danger-border: #fecdca;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.5;
+  color: var(--color-text);
+  background:
+    linear-gradient(180deg, #e8eef4 0%, var(--color-bg) 240px),
+    var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

@@ -1,0 +1,30 @@
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  padding: 1rem 0 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.75rem;
+}
+
+.site-header__brand {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.site-header__logo {
+  display: block;
+  height: 2.75rem;
+  width: auto;
+  max-width: min(220px, 55vw);
+  object-fit: contain;
+}
+
+.site-header__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
