@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
+
+        // Курс RUB→CNY: проверка «пора ли обновить» на любом API-запросе (как wp-cron).
+        $middleware->appendToGroup('api', [
+            \App\Http\Middleware\ScheduleExchangeRateSync::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function (Request $request): bool {

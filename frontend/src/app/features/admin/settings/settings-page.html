@@ -1,6 +1,10 @@
 <div class="admin-page">
   <h1 class="admin-page__heading">Settings</h1>
-  <p class="admin-page__lead">Manage the public RUB → CNY exchange rate used by the calculator.</p>
+  <p class="admin-page__lead">
+    The public RUB → CNY rate is refreshed daily from the Central Bank of Russia when someone uses
+    the site. You can override it manually; the next automatic update will replace your value after
+    about 24 hours.
+  </p>
 
   @if (loading()) {
     <p class="state" role="status">Loading settings…</p>

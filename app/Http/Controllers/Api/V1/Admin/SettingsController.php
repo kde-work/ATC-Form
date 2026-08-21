@@ -10,7 +10,7 @@ use App\Http\Resources\Api\V1\Admin\AdminSettingsResource;
 use App\Models\AppSetting;
 use App\Models\User;
 use App\Services\ActiveTariffQuery;
-use App\Services\Calculator\CalculatorFormDataCache;
+use App\Services\ExchangeRate\ExchangeRateSyncService;
 use Illuminate\Http\Request;
 
 /**
@@ -20,7 +20,7 @@ final class SettingsController extends Controller
 {
     public function __construct(
         private readonly ActiveTariffQuery $activeTariffQuery,
-        private readonly CalculatorFormDataCache $formDataCache,
+        private readonly ExchangeRateSyncService $exchangeRateSync,
     ) {
     }
 
@@ -42,11 +42,12 @@ final class SettingsController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $setting->value = $request->rate();
-        $setting->updated_by_user_id = $user->id;
-        $setting->save();
+        $this->exchangeRateSync->persistRate($request->rate(), $user);
+        // Ручная правка действует минимум сутки, пока следующее автообновление с ЦБ.
+        $this->exchangeRateSync->deferAutomaticSync();
+
+        $setting->refresh();
         $setting->load('updatedBy');
-        $this->formDataCache->forget();
 
         return new AdminSettingsResource($setting);
     }
