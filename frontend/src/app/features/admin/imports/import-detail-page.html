@@ -14,6 +14,14 @@
         <p class="admin-page__lead">{{ item.original_filename }}</p>
       </div>
       <div class="toolbar-actions">
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [disabled]="downloading()"
+          (click)="downloadFile()"
+        >
+          {{ downloading() ? 'Downloading…' : 'Download file' }}
+        </button>
         @if (item.actions.can_activate) {
           <button type="button" class="btn btn--primary" (click)="openActivateConfirm()">
             Activate revision

@@ -86,6 +86,33 @@ export class AdminApiService {
     );
   }
 
+  /** Скачивает исходный XLSX импорта и сохраняет его локально под original filename. */
+  downloadImportFile(id: number, filename: string): Observable<void> {
+    return this.http
+      .get(`${this.baseUrl}/imports/${id}/download`, {
+        responseType: 'blob',
+        observe: 'response',
+      })
+      .pipe(
+        map((response) => {
+          const body = response.body;
+          if (body === null) {
+            throw new Error('Empty download response.');
+          }
+
+          const objectUrl = URL.createObjectURL(body);
+          const anchor = document.createElement('a');
+          anchor.href = objectUrl;
+          anchor.download = filename || `import-${id}.xlsx`;
+          anchor.rel = 'noopener';
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          URL.revokeObjectURL(objectUrl);
+        }),
+      );
+  }
+
   getTariffs(options: {
     platform?: PlatformCode | '';
     revisionId?: number | null;

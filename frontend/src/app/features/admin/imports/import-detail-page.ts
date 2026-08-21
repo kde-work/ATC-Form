@@ -35,6 +35,7 @@ export class ImportDetailPage implements OnInit {
 
   readonly confirmOpen = signal(false);
   readonly confirmMode = signal<'activate' | 'rollback' | null>(null);
+  readonly downloading = signal(false);
 
   readonly formatIsoDate = formatIsoDate;
   readonly formatBytes = formatBytes;
@@ -77,6 +78,29 @@ export class ImportDetailPage implements OnInit {
   openRollbackConfirm(): void {
     this.confirmMode.set('rollback');
     this.confirmOpen.set(true);
+  }
+
+  downloadFile(): void {
+    const detail = this.detail();
+    if (!detail || this.downloading()) {
+      return;
+    }
+
+    this.downloading.set(true);
+    this.actionError.set(null);
+
+    this.api
+      .downloadImportFile(detail.id, detail.original_filename)
+      .pipe(finalize(() => this.downloading.set(false)))
+      .subscribe({
+        error: (err: unknown) => {
+          if (err instanceof ApiClientError) {
+            this.actionError.set(err.message);
+            return;
+          }
+          this.actionError.set('Failed to download import file.');
+        },
+      });
   }
 
   closeConfirm(): void {

@@ -24,6 +24,10 @@
     <div class="alert alert--error" role="alert">{{ error() }}</div>
   }
 
+  @if (downloadError()) {
+    <div class="alert alert--error" role="alert">{{ downloadError() }}</div>
+  }
+
   @if (loading()) {
     <p class="state" role="status">Loading imports…</p>
   } @else if (items().length === 0) {
@@ -64,7 +68,17 @@
                 }
               </td>
               <td>
-                <a [routerLink]="['/admin/imports', item.id]">View</a>
+                <div class="row-actions">
+                  <a [routerLink]="['/admin/imports', item.id]">View</a>
+                  <button
+                    type="button"
+                    class="link-btn"
+                    [disabled]="downloadingId() === item.id"
+                    (click)="downloadFile(item)"
+                  >
+                    {{ downloadingId() === item.id ? 'Downloading…' : 'Download' }}
+                  </button>
+                </div>
               </td>
             </tr>
           }

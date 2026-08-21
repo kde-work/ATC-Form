@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function (): void {
             Route::post('imports', [ImportController::class, 'store'])
                 ->middleware('throttle:admin-import-upload');
             Route::get('imports/{import}', [ImportController::class, 'show']);
+            Route::get('imports/{import}/download', [ImportController::class, 'download']);
             Route::post('imports/{import}/activate', [ImportController::class, 'activate']);
             Route::post('imports/{import}/rollback', [ImportController::class, 'rollback']);
         });

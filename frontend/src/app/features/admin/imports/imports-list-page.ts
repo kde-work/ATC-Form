@@ -36,6 +36,8 @@ export class ImportsListPage implements OnInit {
   readonly items = signal<TariffImportListItemDto[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly downloadError = signal<string | null>(null);
+  readonly downloadingId = signal<number | null>(null);
   readonly statusFilter = signal<ImportStatus | ''>('');
   readonly page = signal(1);
   readonly lastPage = signal(1);
@@ -60,6 +62,28 @@ export class ImportsListPage implements OnInit {
     }
     this.page.set(page);
     this.load();
+  }
+
+  downloadFile(item: TariffImportListItemDto): void {
+    if (this.downloadingId() !== null) {
+      return;
+    }
+
+    this.downloadingId.set(item.id);
+    this.downloadError.set(null);
+
+    this.api
+      .downloadImportFile(item.id, item.original_filename)
+      .pipe(finalize(() => this.downloadingId.set(null)))
+      .subscribe({
+        error: (err: unknown) => {
+          if (err instanceof ApiClientError) {
+            this.downloadError.set(err.message);
+            return;
+          }
+          this.downloadError.set('Failed to download import file.');
+        },
+      });
   }
 
   load(): void {

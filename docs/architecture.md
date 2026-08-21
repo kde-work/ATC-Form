@@ -140,6 +140,7 @@ Angular:
 | GET | `/api/v1/admin/tariffs` |
 | GET | `/api/v1/admin/imports` |
 | GET | `/api/v1/admin/imports/{id}` |
+| GET | `/api/v1/admin/imports/{id}/download` |
 | POST | `/api/v1/admin/imports` |
 | POST | `/api/v1/admin/imports/{id}/activate` |
 | POST | `/api/v1/admin/imports/{id}/rollback` |

@@ -259,6 +259,53 @@ final class AdminApiTest extends TestCase
             ->assertJsonPath('code', 'import_not_activatable');
     }
 
+    public function test_import_file_download_returns_original_xlsx(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $path = $this->fixturesDir . DIRECTORY_SEPARATOR . 'download-me.xlsx';
+        TariffsXlsxFixtureBuilder::write($path);
+        $upload = new UploadedFile($path, 'history-tariffs.xlsx', null, null, true);
+
+        $create = $this->post('/api/v1/admin/imports', ['file' => $upload], [
+            'Accept' => 'application/json',
+        ]);
+        $create->assertCreated();
+        $importId = (int) $create->json('id');
+
+        $download = $this->get('/api/v1/admin/imports/' . $importId . '/download');
+        $download->assertOk();
+        $download->assertDownload('history-tariffs.xlsx');
+        $download->assertHeader(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+
+        $fileResponse = $download->baseResponse;
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class, $fileResponse);
+        $this->assertSame(
+            file_get_contents($path),
+            file_get_contents($fileResponse->getFile()->getPathname()),
+        );
+    }
+
+    public function test_import_file_download_missing_file_returns_not_found(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $import = TariffImport::factory()->create([
+            'uploaded_by_user_id' => $user->id,
+            'original_filename' => 'gone.xlsx',
+            'stored_path' => 'tariff-imports/missing-file.xlsx',
+        ]);
+
+        $this->getJson('/api/v1/admin/imports/' . $import->id . '/download')
+            ->assertNotFound()
+            ->assertJsonPath('code', 'not_found');
+    }
+
     public function test_no_self_registration_endpoint(): void
     {
         $this->postJson('/api/v1/admin/register', [
