@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AdminSettingsDto,
@@ -11,11 +11,13 @@ import {
   TariffImportDetailDto,
   TariffImportListItemDto,
 } from '../models/api.models';
+import { AdminQueryCache } from './admin-query-cache';
 
-/** HTTP-слой admin API: imports, tariffs, settings. */
+/** HTTP-слой admin API с in-memory кэшем GET. */
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(AdminQueryCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/admin`;
 
   getImports(options: {
@@ -23,63 +25,123 @@ export class AdminApiService {
     page?: number;
     perPage?: number;
   } = {}): Observable<PaginatedDto<TariffImportListItemDto>> {
-    let params = new HttpParams();
-    if (options.status) {
-      params = params.set('status', options.status);
-    }
-    if (options.page !== undefined) {
-      params = params.set('page', String(options.page));
-    }
-    if (options.perPage !== undefined) {
-      params = params.set('per_page', String(options.perPage));
-    }
+    const status = options.status ?? '';
+    const page = options.page ?? 1;
+    const perPage = options.perPage ?? 15;
+    const key = this.importsListKey(status, page, perPage);
 
-    return this.http.get<PaginatedDto<TariffImportListItemDto>>(`${this.baseUrl}/imports`, {
-      params,
+    return this.cache.getOrLoad(key, () => {
+      let params = new HttpParams()
+        .set('page', String(page))
+        .set('per_page', String(perPage));
+      if (status) {
+        params = params.set('status', status);
+      }
+
+      return this.http.get<PaginatedDto<TariffImportListItemDto>>(`${this.baseUrl}/imports`, {
+        params,
+      });
     });
   }
 
   getImport(id: number): Observable<TariffImportDetailDto> {
-    return this.http.get<TariffImportDetailDto>(`${this.baseUrl}/imports/${id}`);
+    const key = this.importDetailKey(id);
+
+    return this.cache.getOrLoad(key, () =>
+      this.http.get<TariffImportDetailDto>(`${this.baseUrl}/imports/${id}`),
+    );
   }
 
   uploadImport(file: File): Observable<TariffImportDetailDto> {
     const body = new FormData();
     body.append('file', file, file.name);
 
-    return this.http.post<TariffImportDetailDto>(`${this.baseUrl}/imports`, body);
+    return this.http.post<TariffImportDetailDto>(`${this.baseUrl}/imports`, body).pipe(
+      tap((detail) => {
+        this.cache.invalidate(['imports', 'tariffs']);
+        this.cache.set(this.importDetailKey(detail.id), detail);
+      }),
+    );
   }
 
   activateImport(id: number): Observable<TariffImportDetailDto> {
-    return this.http.post<TariffImportDetailDto>(`${this.baseUrl}/imports/${id}/activate`, {});
+    return this.http.post<TariffImportDetailDto>(`${this.baseUrl}/imports/${id}/activate`, {}).pipe(
+      tap((detail) => {
+        this.cache.invalidate(['imports', 'tariffs']);
+        this.cache.set(this.importDetailKey(detail.id), detail);
+      }),
+    );
   }
 
   rollbackImport(id: number): Observable<TariffImportDetailDto> {
-    return this.http.post<TariffImportDetailDto>(`${this.baseUrl}/imports/${id}/rollback`, {});
+    return this.http.post<TariffImportDetailDto>(`${this.baseUrl}/imports/${id}/rollback`, {}).pipe(
+      tap((detail) => {
+        this.cache.invalidate(['imports', 'tariffs']);
+        this.cache.set(this.importDetailKey(detail.id), detail);
+      }),
+    );
   }
 
   getTariffs(options: {
     platform?: PlatformCode | '';
     revisionId?: number | null;
   } = {}): Observable<AdminTariffDto[]> {
-    let params = new HttpParams();
-    if (options.platform) {
-      params = params.set('platform', options.platform);
-    }
-    if (options.revisionId !== undefined && options.revisionId !== null) {
-      params = params.set('revision_id', String(options.revisionId));
-    }
+    const platform = options.platform ?? '';
+    const revisionId =
+      options.revisionId === undefined || options.revisionId === null
+        ? ''
+        : String(options.revisionId);
+    const key = this.tariffsKey(platform, revisionId);
 
-    return this.http.get<AdminTariffDto[]>(`${this.baseUrl}/tariffs`, { params });
+    return this.cache.getOrLoad(key, () => {
+      let params = new HttpParams();
+      if (platform) {
+        params = params.set('platform', platform);
+      }
+      if (revisionId !== '') {
+        params = params.set('revision_id', revisionId);
+      }
+
+      return this.http.get<AdminTariffDto[]>(`${this.baseUrl}/tariffs`, { params });
+    });
   }
 
   getSettings(): Observable<AdminSettingsDto> {
-    return this.http.get<AdminSettingsDto>(`${this.baseUrl}/settings`);
+    return this.cache.getOrLoad('settings', () =>
+      this.http.get<AdminSettingsDto>(`${this.baseUrl}/settings`),
+    );
   }
 
   updateExchangeRate(rubToCnyRate: string): Observable<AdminSettingsDto> {
-    return this.http.put<AdminSettingsDto>(`${this.baseUrl}/settings/exchange-rate`, {
-      rub_to_cny_rate: rubToCnyRate,
-    });
+    return this.http
+      .put<AdminSettingsDto>(`${this.baseUrl}/settings/exchange-rate`, {
+        rub_to_cny_rate: rubToCnyRate,
+      })
+      .pipe(tap((settings) => this.cache.set('settings', settings)));
+  }
+
+  /**
+   * Прогрев основных admin-эндпоинтов при входе в shell / после login.
+   * Ошибки отдельных запросов не валят весь прогрев.
+   */
+  prefetchWarmup(): Observable<void> {
+    return forkJoin([
+      this.getImports({ page: 1, perPage: 15 }).pipe(catchError(() => of(null))),
+      this.getImports({ perPage: 100 }).pipe(catchError(() => of(null))),
+      this.getTariffs().pipe(catchError(() => of(null))),
+      this.getSettings().pipe(catchError(() => of(null))),
+    ]).pipe(map(() => undefined));
+  }
+
+  private importsListKey(status: string, page: number, perPage: number): string {
+    return `imports?status=${status}&page=${page}&per_page=${perPage}`;
+  }
+
+  private importDetailKey(id: number): string {
+    return `imports:${id}`;
+  }
+
+  private tariffsKey(platform: string, revisionId: string): string {
+    return `tariffs?platform=${platform}&revision_id=${revisionId}`;
   }
 }

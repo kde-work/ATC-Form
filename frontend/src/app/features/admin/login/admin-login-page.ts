@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, switchMap } from 'rxjs';
 import { ApiClientError } from '../../../core/models/api.models';
+import { AdminApiService } from '../../../core/services/admin-api.service';
 import { AdminAuthService } from '../../../core/services/admin-auth.service';
 import { SiteHeader } from '../../../shared/components/site-header/site-header';
 
@@ -14,6 +15,7 @@ import { SiteHeader } from '../../../shared/components/site-header/site-header';
 })
 export class AdminLoginPage {
   private readonly auth = inject(AdminAuthService);
+  private readonly api = inject(AdminApiService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -61,7 +63,10 @@ export class AdminLoginPage {
 
     this.auth
       .login(email.trim(), password)
-      .pipe(finalize(() => this.submitting.set(false)))
+      .pipe(
+        switchMap(() => this.api.prefetchWarmup().pipe(catchError(() => of(undefined)))),
+        finalize(() => this.submitting.set(false)),
+      )
       .subscribe({
         next: () => void this.router.navigateByUrl('/admin/imports'),
         error: (error: unknown) => {

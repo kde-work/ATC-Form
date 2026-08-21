@@ -3,6 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AdminLoginResponseDto, AdminUserDto } from '../models/api.models';
+import { AdminQueryCache } from './admin-query-cache';
 import { AuthTokenService } from './auth-token.service';
 
 /** Login / logout / me для админки. */
@@ -10,6 +11,7 @@ import { AuthTokenService } from './auth-token.service';
 export class AdminAuthService {
   private readonly http = inject(HttpClient);
   private readonly tokens = inject(AuthTokenService);
+  private readonly cache = inject(AdminQueryCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/admin`;
 
   private readonly userSignal = signal<AdminUserDto | null>(null);
@@ -24,8 +26,10 @@ export class AdminAuthService {
       .post<AdminLoginResponseDto>(`${this.baseUrl}/login`, { email, password })
       .pipe(
         tap((response) => {
+          this.cache.clear();
           this.tokens.setToken(response.token);
           this.userSignal.set(response.user);
+          this.cache.set('me', response.user);
         }),
       );
   }
@@ -40,13 +44,14 @@ export class AdminAuthService {
   }
 
   me(): Observable<AdminUserDto> {
-    return this.http.get<AdminUserDto>(`${this.baseUrl}/me`).pipe(
-      tap((user) => this.userSignal.set(user)),
-    );
+    return this.cache
+      .getOrLoad('me', () => this.http.get<AdminUserDto>(`${this.baseUrl}/me`))
+      .pipe(tap((user) => this.userSignal.set(user)));
   }
 
   clearSession(): void {
     this.tokens.clearToken();
     this.userSignal.set(null);
+    this.cache.clear();
   }
 }
