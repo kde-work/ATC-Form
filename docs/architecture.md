@@ -237,6 +237,8 @@ MySQL не умеет partial unique index PostgreSQL. Защита:
 - UNIQUE на `active_guard` (несколько NULL допустимы, единица только одна);
 - плюс транзакция activate/rollback: сначала снять active, потом назначить.
 
+В PHPUnit (SQLite in-memory) generated column не создаётся тем же DDL: колонка `active_guard` обычная nullable unique, значение выставляет модель `TariffRevision` при save. На MySQL в Docker колонка STORED GENERATED.
+
 Калькулятор и публичные каналы читают только `status = active`.
 
 ### delivery_channels
