@@ -18,8 +18,19 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # Корень сайта: Angular, не Laravel index.php (DirectoryIndex по умолчанию берёт index.php первым).
+    DirectoryIndex index.html index.php
+
+    # API -> Laravel (/api/... или /public/api/... после rewrite из корневого .htaccess)
+    RewriteCond %{REQUEST_URI} /api/
+    RewriteRule ^ index.php [L]
+
+    # Существующие файлы (Angular assets, images, favicon)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Angular SPA fallback
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ index.html [L]
 </IfModule>

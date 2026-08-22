@@ -1,0 +1,9 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # API -> Laravel до проксирования в public/ (иначе SPA fallback отдаёт index.html)
+    RewriteRule ^api(?:/|$) public/index.php [L]
+
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
