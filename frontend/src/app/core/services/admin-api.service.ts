@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, forkJoin, map, Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { adminApiBase } from '../constants/admin-path';
 import {
   AdminSettingsDto,
   AdminTariffDto,
@@ -20,7 +21,7 @@ export class AdminApiService {
   private readonly http = inject(HttpClient);
   private readonly cache = inject(AdminQueryCache);
   private readonly calculatorCache = inject(CalculatorQueryCache);
-  private readonly baseUrl = `${environment.apiBaseUrl}/admin`;
+  private readonly baseUrl = adminApiBase(environment.apiBaseUrl);
 
   getImports(options: {
     status?: ImportStatus | '';

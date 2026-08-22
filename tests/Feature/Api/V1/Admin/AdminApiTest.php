@@ -57,7 +57,7 @@ final class AdminApiTest extends TestCase
             'password' => Hash::make('password'),
         ]);
 
-        $response = $this->postJson('/api/v1/admin/login', [
+        $response = $this->postJson($this->adminApiUrl('login'), [
             'email' => 'admin@atc.form',
             'password' => 'password',
         ]);
@@ -76,7 +76,7 @@ final class AdminApiTest extends TestCase
             'password' => Hash::make('password'),
         ]);
 
-        $response = $this->postJson('/api/v1/admin/login', [
+        $response = $this->postJson($this->adminApiUrl('login'), [
             'email' => 'admin@atc.form',
             'password' => 'wrong',
         ]);
@@ -87,7 +87,7 @@ final class AdminApiTest extends TestCase
 
     public function test_protected_routes_require_auth(): void
     {
-        $response = $this->getJson('/api/v1/admin/me');
+        $response = $this->getJson($this->adminApiUrl('me'));
 
         $response->assertUnauthorized();
         $response->assertJsonPath('code', 'unauthenticated');
@@ -99,12 +99,12 @@ final class AdminApiTest extends TestCase
         $token = $user->createToken('admin')->plainTextToken;
 
         $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->getJson('/api/v1/admin/me')
+            ->getJson($this->adminApiUrl('me'))
             ->assertOk()
             ->assertJsonPath('email', $user->email);
 
         $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->postJson('/api/v1/admin/logout')
+            ->postJson($this->adminApiUrl('logout'))
             ->assertOk()
             ->assertJsonPath('message', 'Logged out.');
 
@@ -116,12 +116,12 @@ final class AdminApiTest extends TestCase
         $user = User::factory()->create(['name' => 'Admin']);
         Sanctum::actingAs($user);
 
-        $this->getJson('/api/v1/admin/settings')
+        $this->getJson($this->adminApiUrl('settings'))
             ->assertOk()
             ->assertJsonPath('rub_to_cny_rate', '0.085000')
             ->assertJsonPath('updated_by', null);
 
-        $this->putJson('/api/v1/admin/settings/exchange-rate', [
+        $this->putJson($this->adminApiUrl('settings/exchange-rate'), [
             'rub_to_cny_rate' => '0.091',
         ])
             ->assertOk()
@@ -129,7 +129,7 @@ final class AdminApiTest extends TestCase
             ->assertJsonPath('updated_by.id', $user->id)
             ->assertJsonPath('updated_by.name', 'Admin');
 
-        $this->putJson('/api/v1/admin/settings/exchange-rate', [
+        $this->putJson($this->adminApiUrl('settings/exchange-rate'), [
             'rub_to_cny_rate' => '0',
         ])
             ->assertUnprocessable()
@@ -155,17 +155,17 @@ final class AdminApiTest extends TestCase
             'name' => 'Draft Only',
         ]);
 
-        $this->getJson('/api/v1/admin/tariffs')
+        $this->getJson($this->adminApiUrl('tariffs'))
             ->assertOk()
             ->assertJsonCount(2);
 
-        $this->getJson('/api/v1/admin/tariffs?platform=ozon')
+        $this->getJson($this->adminApiUrl('tariffs') . '?platform=ozon')
             ->assertOk()
             ->assertJsonCount(1)
             ->assertJsonPath('0.code', 'atc-express-extra-small')
             ->assertJsonPath('0.fixed_fee', '4.100000');
 
-        $this->getJson('/api/v1/admin/tariffs?revision_id=' . $draft->id)
+        $this->getJson($this->adminApiUrl('tariffs') . '?revision_id=' . $draft->id)
             ->assertOk()
             ->assertJsonCount(1)
             ->assertJsonPath('0.code', 'draft-only');
@@ -180,7 +180,7 @@ final class AdminApiTest extends TestCase
         TariffsXlsxFixtureBuilder::write($path);
         $upload = new UploadedFile($path, 'valid-tariffs.xlsx', null, null, true);
 
-        $create = $this->post('/api/v1/admin/imports', ['file' => $upload], [
+        $create = $this->post($this->adminApiUrl('imports'), ['file' => $upload], [
             'Accept' => 'application/json',
         ]);
 
@@ -196,12 +196,12 @@ final class AdminApiTest extends TestCase
 
         $importId = (int) $create->json('id');
 
-        $this->getJson('/api/v1/admin/imports?status=validated')
+        $this->getJson($this->adminApiUrl('imports') . '?status=validated')
             ->assertOk()
             ->assertJsonPath('data.0.id', $importId)
             ->assertJsonPath('data.0.actions.can_activate', true);
 
-        $this->postJson('/api/v1/admin/imports/' . $importId . '/activate')
+        $this->postJson($this->adminApiUrl('imports/' . $importId . '/activate'))
             ->assertOk()
             ->assertJsonPath('status', ImportStatus::Activated->value)
             ->assertJsonPath('revision.status', RevisionStatus::Active->value)
@@ -211,22 +211,22 @@ final class AdminApiTest extends TestCase
         TariffsXlsxFixtureBuilder::write($path2);
         $upload2 = new UploadedFile($path2, 'valid-tariffs-2.xlsx', null, null, true);
 
-        $second = $this->post('/api/v1/admin/imports', ['file' => $upload2], [
+        $second = $this->post($this->adminApiUrl('imports'), ['file' => $upload2], [
             'Accept' => 'application/json',
         ]);
         $second->assertCreated();
         $secondId = (int) $second->json('id');
 
-        $this->postJson('/api/v1/admin/imports/' . $secondId . '/activate')
+        $this->postJson($this->adminApiUrl('imports/' . $secondId . '/activate'))
             ->assertOk()
             ->assertJsonPath('revision.status', RevisionStatus::Active->value);
 
-        $this->getJson('/api/v1/admin/imports/' . $importId)
+        $this->getJson($this->adminApiUrl('imports/' . $importId))
             ->assertOk()
             ->assertJsonPath('revision.status', RevisionStatus::Archived->value)
             ->assertJsonPath('actions.can_rollback', true);
 
-        $this->postJson('/api/v1/admin/imports/' . $importId . '/rollback')
+        $this->postJson($this->adminApiUrl('imports/' . $importId . '/rollback'))
             ->assertOk()
             ->assertJsonPath('revision.status', RevisionStatus::Active->value);
 
@@ -254,7 +254,7 @@ final class AdminApiTest extends TestCase
             'version_number' => 1,
         ]);
 
-        $this->postJson('/api/v1/admin/imports/' . $import->id . '/activate')
+        $this->postJson($this->adminApiUrl('imports/' . $import->id . '/activate'))
             ->assertUnprocessable()
             ->assertJsonPath('code', 'import_not_activatable');
     }
@@ -268,13 +268,13 @@ final class AdminApiTest extends TestCase
         TariffsXlsxFixtureBuilder::write($path);
         $upload = new UploadedFile($path, 'history-tariffs.xlsx', null, null, true);
 
-        $create = $this->post('/api/v1/admin/imports', ['file' => $upload], [
+        $create = $this->post($this->adminApiUrl('imports'), ['file' => $upload], [
             'Accept' => 'application/json',
         ]);
         $create->assertCreated();
         $importId = (int) $create->json('id');
 
-        $download = $this->get('/api/v1/admin/imports/' . $importId . '/download');
+        $download = $this->get($this->adminApiUrl('imports/' . $importId . '/download'));
         $download->assertOk();
         $download->assertDownload('history-tariffs.xlsx');
         $download->assertHeader(
@@ -301,14 +301,14 @@ final class AdminApiTest extends TestCase
             'stored_path' => 'tariff-imports/missing-file.xlsx',
         ]);
 
-        $this->getJson('/api/v1/admin/imports/' . $import->id . '/download')
+        $this->getJson($this->adminApiUrl('imports/' . $import->id . '/download'))
             ->assertNotFound()
             ->assertJsonPath('code', 'not_found');
     }
 
     public function test_no_self_registration_endpoint(): void
     {
-        $this->postJson('/api/v1/admin/register', [
+        $this->postJson($this->adminApiUrl('register'), [
             'email' => 'new@atc.form',
             'password' => 'password',
         ])->assertNotFound();

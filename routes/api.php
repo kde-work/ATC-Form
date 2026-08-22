@@ -20,7 +20,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('settings/public', [PublicSettingsController::class, 'show']);
     Route::post('calculations', [CalculationController::class, 'store']);
 
-    Route::prefix('admin')->group(function (): void {
+    Route::prefix((string) config('atc.admin_path'))->group(function (): void {
         Route::post('login', [AuthController::class, 'login'])
             ->middleware('throttle:admin-login');
 

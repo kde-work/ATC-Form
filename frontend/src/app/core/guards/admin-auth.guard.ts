@@ -1,8 +1,9 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { adminRoute } from '../constants/admin-path';
 import { AuthTokenService } from '../services/auth-token.service';
 
-/** Без токена редирект на /admin/login. */
+/** Без токена редирект на login admin-панели. */
 export const adminAuthGuard: CanActivateFn = () => {
   const auth = inject(AuthTokenService);
   const router = inject(Router);
@@ -11,7 +12,7 @@ export const adminAuthGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.createUrlTree(['/admin/login']);
+  return router.createUrlTree([adminRoute('login')]);
 };
 
 /** Уже авторизованного уводит с login на imports. */
@@ -23,5 +24,5 @@ export const adminGuestGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.createUrlTree(['/admin/imports']);
+  return router.createUrlTree([adminRoute('imports')]);
 };

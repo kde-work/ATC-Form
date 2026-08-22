@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { adminApiBase } from '../constants/admin-path';
 import { AdminLoginResponseDto, AdminUserDto } from '../models/api.models';
 import { AdminQueryCache } from './admin-query-cache';
 import { AuthTokenService } from './auth-token.service';
@@ -12,7 +13,7 @@ export class AdminAuthService {
   private readonly http = inject(HttpClient);
   private readonly tokens = inject(AuthTokenService);
   private readonly cache = inject(AdminQueryCache);
-  private readonly baseUrl = `${environment.apiBaseUrl}/admin`;
+  private readonly baseUrl = adminApiBase(environment.apiBaseUrl);
 
   private readonly userSignal = signal<AdminUserDto | null>(null);
   readonly user = this.userSignal.asReadonly();

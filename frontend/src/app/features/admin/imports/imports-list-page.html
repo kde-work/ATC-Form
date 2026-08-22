@@ -4,7 +4,7 @@
       <h1 class="admin-page__heading">Tariff imports</h1>
       <p class="admin-page__lead">Upload history, validation status, and active revision.</p>
     </div>
-    <a class="btn btn--primary" routerLink="/admin/imports/new">Upload new tariff file</a>
+    <a class="btn btn--primary" routerLink="new">Upload new tariff file</a>
   </div>
 
   <div class="filters">
@@ -69,7 +69,7 @@
               </td>
               <td>
                 <div class="row-actions">
-                  <a [routerLink]="['/admin/imports', item.id]">View</a>
+                  <a [routerLink]="[item.id]">View</a>
                   <button
                     type="button"
                     class="link-btn"

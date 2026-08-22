@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { finalize, forkJoin } from 'rxjs';
 import { AdminApiService } from '../../../core/services/admin-api.service';
 import { AdminAuthService } from '../../../core/services/admin-auth.service';
+import { adminRoute } from '../../../core/constants/admin-path';
 
 /** Каркас админки: логотип, навигация, logout, outlet. */
 @Component({
@@ -49,8 +50,8 @@ export class AdminShell implements OnInit {
       .logout()
       .pipe(finalize(() => this.loggingOut.set(false)))
       .subscribe({
-        next: () => void this.router.navigateByUrl('/admin/login'),
-        error: () => void this.router.navigateByUrl('/admin/login'),
+        next: () => void this.router.navigateByUrl(adminRoute('login')),
+        error: () => void this.router.navigateByUrl(adminRoute('login')),
       });
   }
 }

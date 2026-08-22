@@ -2,6 +2,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { adminPath, adminRoute } from '../constants/admin-path';
 import { ApiClientError } from '../models/api.models';
 import { AdminAuthService } from '../services/admin-auth.service';
 
@@ -18,10 +19,10 @@ export const unauthorizedInterceptor: HttpInterceptorFn = (req, next) => {
       if (
         error instanceof ApiClientError &&
         error.status === 401 &&
-        !req.url.includes('/admin/login')
+        !req.url.includes(`/${adminPath}/login`)
       ) {
         auth.clearSession();
-        void router.navigateByUrl('/admin/login');
+        void router.navigateByUrl(adminRoute('login'));
       }
 
       return throwError(() => error);

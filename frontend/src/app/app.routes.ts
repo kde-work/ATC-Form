@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminPath } from './core/constants/admin-path';
 import { adminAuthGuard, adminGuestGuard } from './core/guards/admin-auth.guard';
 
 export const routes: Routes = [
@@ -9,13 +10,13 @@ export const routes: Routes = [
       import('./features/calculator/calculator-page').then((m) => m.CalculatorPage),
   },
   {
-    path: 'admin/login',
+    path: `${adminPath}/login`,
     canActivate: [adminGuestGuard],
     loadComponent: () =>
       import('./features/admin/login/admin-login-page').then((m) => m.AdminLoginPage),
   },
   {
-    path: 'admin',
+    path: adminPath,
     canActivate: [adminAuthGuard],
     loadComponent: () =>
       import('./features/admin/shell/admin-shell').then((m) => m.AdminShell),

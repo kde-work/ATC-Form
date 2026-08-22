@@ -5,6 +5,7 @@ import { catchError, finalize, of, switchMap } from 'rxjs';
 import { ApiClientError } from '../../../core/models/api.models';
 import { AdminApiService } from '../../../core/services/admin-api.service';
 import { AdminAuthService } from '../../../core/services/admin-auth.service';
+import { adminRoute } from '../../../core/constants/admin-path';
 import { SiteHeader } from '../../../shared/components/site-header/site-header';
 
 @Component({
@@ -68,7 +69,7 @@ export class AdminLoginPage {
         finalize(() => this.submitting.set(false)),
       )
       .subscribe({
-        next: () => void this.router.navigateByUrl('/admin/imports'),
+        next: () => void this.router.navigateByUrl(adminRoute('imports')),
         error: (error: unknown) => {
           if (error instanceof ApiClientError) {
             this.fieldErrors.set(error.fieldErrors);

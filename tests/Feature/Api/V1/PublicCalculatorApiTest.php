@@ -142,7 +142,7 @@ final class PublicCalculatorApiTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->putJson('/api/v1/admin/settings/exchange-rate', [
+        $this->putJson($this->adminApiUrl('settings/exchange-rate'), [
             'rub_to_cny_rate' => '0.091',
         ])->assertOk();
 

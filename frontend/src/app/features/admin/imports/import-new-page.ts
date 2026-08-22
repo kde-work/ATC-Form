@@ -4,6 +4,7 @@ import { finalize } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiClientError } from '../../../core/models/api.models';
 import { AdminApiService } from '../../../core/services/admin-api.service';
+import { adminRoute } from '../../../core/constants/admin-path';
 import { formatBytes } from '../../../core/utils/admin-display';
 
 @Component({
@@ -71,7 +72,7 @@ export class ImportNewPage {
       .uploadImport(file)
       .pipe(finalize(() => this.uploading.set(false)))
       .subscribe({
-        next: (detail) => void this.router.navigateByUrl(`/admin/imports/${detail.id}`),
+        next: (detail) => void this.router.navigateByUrl(adminRoute('imports', detail.id)),
         error: (err: unknown) => {
           if (err instanceof ApiClientError) {
             this.error.set(err.flatMessages().join(' '));

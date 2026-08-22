@@ -34,5 +34,6 @@
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="ADMIN_EMAIL" value="admin@atc.form"/>
         <env name="ADMIN_PASSWORD" value="password"/>
+        <env name="ADMIN_PATH" value="test-admin"/>
     </php>
 </phpunit>
