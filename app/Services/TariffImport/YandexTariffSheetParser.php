@@ -47,8 +47,22 @@ final class YandexTariffSheetParser
             ];
         }
 
-        $channels = [];
-        $errors = [];
+        // Сначала таблица "Параметр | Super Express | Express" (исходник заказчика).
+        $table = $this->parseParameterTable($rows, $sectionStart, $sheetName);
+        $channels = $table['channels'];
+        $errors = $table['errors'];
+
+        if (count($channels) >= 2) {
+            return [
+                'channels' => $channels,
+                'errors' => $errors,
+            ];
+        }
+
+        $present = [];
+        foreach ($channels as $channel) {
+            $present[$channel->code] = true;
+        }
 
         for ($i = $sectionStart, $count = count($rows); $i < $count; $i++) {
             $row = $rows[$i] ?? null;
@@ -68,7 +82,7 @@ final class YandexTariffSheetParser
             }
 
             $code = ChannelCode::fromName($englishName);
-            if (! in_array($code, self::REQUIRED_CODES, true)) {
+            if (! in_array($code, self::REQUIRED_CODES, true) || isset($present[$code])) {
                 continue;
             }
 
@@ -91,31 +105,141 @@ final class YandexTariffSheetParser
             $fixedFee = $rate['fixed_fee'];
             $perKgFee = $rate['per_kg_fee'];
 
-            $channels[] = new ParsedChannelRow(
-                platform: Platform::YandexMarket,
-                code: $code,
-                name: $englishName,
-                currency: 'RUB',
-                fixedFee: $fixedFee,
-                perGramFee: null,
-                perKgFee: $perKgFee,
-                billingIncrementGrams: self::DEFAULT_INCREMENT_GRAMS,
-                chargeableWeightType: null,
-                volumetricDivisor: null,
-                minWeightGrams: null,
-                maxWeightGrams: null,
-                maxLengthCm: null,
-                maxSumDimensionsCm: null,
-                minOrderCostRub: null,
-                maxOrderCostRub: null,
-                minOrderCostCny: null,
-                maxOrderCostCny: null,
-                importSourceRow: $excelRow,
-                sheetName: $sheetName,
-                rawData: [
+            $channels[] = $this->makeChannel(
+                $englishName,
+                $code,
+                $fixedFee,
+                $perKgFee,
+                $excelRow,
+                $sheetName,
+                [
                     'name_raw' => $nameCell,
                     'rate' => CellValueNormalizer::toString($rateRaw),
                 ],
+            );
+            $present[$code] = true;
+        }
+
+        return [
+            'channels' => $channels,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * @param list<list<mixed>|null> $rows
+     * @return array{channels: list<ParsedChannelRow>, errors: list<ImportErrorDraft>}
+     */
+    private function parseParameterTable(array $rows, int $sectionStart, string $sheetName): array
+    {
+        $columnByCode = [];
+        $headerIndex = null;
+
+        for ($i = $sectionStart, $count = count($rows); $i < $count; $i++) {
+            $row = $rows[$i] ?? null;
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $found = [];
+            foreach ($row as $col => $cell) {
+                $englishName = $this->extractEnglishChannelName(CellValueNormalizer::toString($cell));
+                if ($englishName === null) {
+                    continue;
+                }
+
+                $code = ChannelCode::fromName($englishName);
+                if (in_array($code, self::REQUIRED_CODES, true)) {
+                    $found[$code] = ['col' => $col, 'name' => $englishName];
+                }
+            }
+
+            if (isset($found['super-express'], $found['express'])) {
+                $columnByCode = $found;
+                $headerIndex = $i;
+                break;
+            }
+        }
+
+        if ($headerIndex === null) {
+            return ['channels' => [], 'errors' => []];
+        }
+
+        $perKg = [];
+        $fixed = [];
+        $sourceRow = $headerIndex + 1;
+        $raw = [];
+
+        $last = min(count($rows), $headerIndex + 25);
+        for ($i = $headerIndex + 1; $i < $last; $i++) {
+            $row = $rows[$i] ?? null;
+            if (! is_array($row) || $this->isEmptyRow($row)) {
+                continue;
+            }
+
+            $label = mb_strtolower(CellValueNormalizer::toString($row[0] ?? null), 'UTF-8');
+            $joined = mb_strtolower(implode(' ', array_map(
+                static fn (mixed $cell): string => CellValueNormalizer::toString($cell),
+                $row,
+            )), 'UTF-8');
+
+            if (str_contains($joined, 'окрвверх') || str_contains($joined, 'ceil(')) {
+                continue;
+            }
+
+            $rowLooksPerKg = str_contains($label, 'кг') || str_contains($label, '/kg') || str_contains($label, 'per kg');
+            $rowLooksFixed = str_contains($label, 'фиксир') || str_contains($label, '/шт') || str_contains($label, 'fixed');
+
+            foreach ($columnByCode as $code => $meta) {
+                $cell = $row[$meta['col']] ?? null;
+                $text = CellValueNormalizer::toString($cell);
+                if ($text === '' || str_starts_with($text, '=')) {
+                    continue;
+                }
+
+                $lower = mb_strtolower($text, 'UTF-8');
+                $amount = CellValueNormalizer::parseLeadingDecimal($cell);
+                if ($amount === null) {
+                    continue;
+                }
+
+                if (str_contains($lower, '/кг') || str_contains($lower, '/kg') || $rowLooksPerKg) {
+                    $perKg[$code] = $amount;
+                    $raw[$code]['per_kg'] = $text;
+                    $sourceRow = $i + 1;
+                } elseif (str_contains($lower, '/шт') || $rowLooksFixed) {
+                    $fixed[$code] = $amount;
+                    $raw[$code]['fixed'] = $text;
+                    $sourceRow = $i + 1;
+                }
+            }
+        }
+
+        $channels = [];
+        $errors = [];
+
+        foreach ($columnByCode as $code => $meta) {
+            $name = $meta['name'];
+            if (! isset($fixed[$code], $perKg[$code])) {
+                $errors[] = new ImportErrorDraft(
+                    message: "Yandex Market section: {$name} tariff rate cannot be parsed.",
+                    sheetName: $sheetName,
+                    rowNumber: $sourceRow,
+                    field: 'per_kg_fee',
+                    errorCode: 'yandex_rate_parse',
+                );
+
+                continue;
+            }
+
+            $channels[] = $this->makeChannel(
+                $name,
+                $code,
+                $fixed[$code],
+                $perKg[$code],
+                $sourceRow,
+                $sheetName,
+                $raw[$code] ?? [],
             );
         }
 
@@ -126,6 +250,45 @@ final class YandexTariffSheetParser
     }
 
     /**
+     * @param numeric-string $fixedFee
+     * @param numeric-string $perKgFee
+     * @param array<string, mixed> $rawData
+     */
+    private function makeChannel(
+        string $name,
+        string $code,
+        string $fixedFee,
+        string $perKgFee,
+        int $excelRow,
+        string $sheetName,
+        array $rawData,
+    ): ParsedChannelRow {
+        return new ParsedChannelRow(
+            platform: Platform::YandexMarket,
+            code: $code,
+            name: $name,
+            currency: 'RUB',
+            fixedFee: $fixedFee,
+            perGramFee: null,
+            perKgFee: $perKgFee,
+            billingIncrementGrams: self::DEFAULT_INCREMENT_GRAMS,
+            chargeableWeightType: null,
+            volumetricDivisor: null,
+            minWeightGrams: null,
+            maxWeightGrams: null,
+            maxLengthCm: null,
+            maxSumDimensionsCm: null,
+            minOrderCostRub: null,
+            maxOrderCostRub: null,
+            minOrderCostCny: null,
+            maxOrderCostCny: null,
+            importSourceRow: $excelRow,
+            sheetName: $sheetName,
+            rawData: $rawData,
+        );
+    }
+
+    /**
      * Есть ли на листе секция Yandex (для выбора листа книги).
      *
      * @param list<list<mixed>|null> $rows
@@ -133,6 +296,39 @@ final class YandexTariffSheetParser
     public function sheetContainsYandexSection(array $rows): bool
     {
         return $this->findSectionStart($rows) !== null;
+    }
+
+    /**
+     * На листе есть оба канала YM (не только упоминание в описании).
+     *
+     * @param list<list<mixed>|null> $rows
+     */
+    public function sheetHasRequiredChannels(array $rows): bool
+    {
+        $found = [];
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            foreach ($row as $cell) {
+                $englishName = $this->extractEnglishChannelName(CellValueNormalizer::toString($cell));
+                if ($englishName === null) {
+                    continue;
+                }
+
+                $code = ChannelCode::fromName($englishName);
+                if (in_array($code, self::REQUIRED_CODES, true)) {
+                    $found[$code] = true;
+                }
+            }
+
+            if (isset($found['super-express'], $found['express'])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

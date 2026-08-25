@@ -93,7 +93,7 @@ final class OzonTariffSheetParser
                 continue;
             }
 
-            if ($this->looksLikeHeaderRow($row)) {
+            if ($this->isRepeatedHeaderRow($row, $columnMap)) {
                 continue;
             }
 
@@ -141,24 +141,23 @@ final class OzonTariffSheetParser
                 continue;
             }
 
-            if ($this->headerMatches($header, ['channel', 'name', 'канал', 'имя'])) {
-                $map['name'] = $index;
-            } elseif ($this->headerMatches($header, ['weight', 'вес'])) {
+            // Сначала узкие заголовки исходника: min/max g и cost RUB/CNY.
+            if ($this->isOrderCnyHeader($header)) {
+                $map['order_cny'] = $index;
+            } elseif ($this->isOrderRubHeader($header)) {
+                $map['order_rub'] = $index;
+            } elseif ($this->isWeightMinHeader($header)) {
+                $map['weight_min'] = $index;
+            } elseif ($this->isWeightMaxHeader($header)) {
+                $map['weight_max'] = $index;
+            } elseif ($this->isWeightRangeHeader($header)) {
                 $map['weight'] = $index;
+            } elseif ($this->headerMatches($header, ['channel', 'name', 'канал', 'имя', 'delivery method', 'method'])) {
+                $map['name'] = $index;
             } elseif ($this->headerMatches($header, ['rate', 'тариф', 'fee'])) {
                 $map['rate'] = $index;
-            } elseif ($this->headerMatches($header, ['limits', 'limit', 'ограничен'])) {
+            } elseif ($this->isLimitsHeader($header)) {
                 $map['limits'] = $index;
-            } elseif (
-                $this->headerMatches($header, ['order cny', 'order_cost_cny', 'cost cny'])
-                || (str_contains($header, 'order') && str_contains($header, 'cny'))
-            ) {
-                $map['order_cny'] = $index;
-            } elseif (
-                $this->headerMatches($header, ['order rub', 'order_cost_rub', 'cost rub'])
-                || (str_contains($header, 'order') && str_contains($header, 'rub'))
-            ) {
-                $map['order_rub'] = $index;
             } elseif ($this->headerMatches($header, ['currency', 'валюта'])) {
                 $map['currency'] = $index;
             } elseif ($this->headerMatches($header, ['divisor', 'volumetric'])) {
@@ -181,6 +180,56 @@ final class OzonTariffSheetParser
         }
 
         return false;
+    }
+
+    private function isOrderCnyHeader(string $header): bool
+    {
+        if (! str_contains($header, 'cny')) {
+            return false;
+        }
+
+        return $this->headerMatches($header, ['order', 'cost', 'shipment', 'заказ']);
+    }
+
+    private function isOrderRubHeader(string $header): bool
+    {
+        if (! str_contains($header, 'rub')) {
+            return false;
+        }
+
+        return $this->headerMatches($header, ['order', 'cost', 'shipment', 'заказ']);
+    }
+
+    private function isWeightMinHeader(string $header): bool
+    {
+        if (! $this->headerMatches($header, ['weight', 'вес'])) {
+            return false;
+        }
+
+        return str_contains($header, 'min') && ! str_contains($header, 'max');
+    }
+
+    private function isWeightMaxHeader(string $header): bool
+    {
+        if (! $this->headerMatches($header, ['weight', 'вес'])) {
+            return false;
+        }
+
+        return str_contains($header, 'max');
+    }
+
+    private function isWeightRangeHeader(string $header): bool
+    {
+        if (! $this->headerMatches($header, ['weight', 'вес'])) {
+            return false;
+        }
+
+        return ! str_contains($header, 'min') && ! str_contains($header, 'max');
+    }
+
+    private function isLimitsHeader(string $header): bool
+    {
+        return $this->headerMatches($header, ['measurements', 'measurement', 'limits', 'limit', 'ограничен', 'sides']);
     }
 
     /**
@@ -224,6 +273,28 @@ final class OzonTariffSheetParser
         }
 
         return $hits >= 2;
+    }
+
+    /**
+     * Повтор шапки в середине листа: ячейка имени снова "Delivery Method" / Channel.
+     * Строка тарифа с "Physical weight" и словом rate в ставке шапкой не считается.
+     *
+     * @param array<string, int> $columnMap
+     * @param list<mixed> $row
+     */
+    private function isRepeatedHeaderRow(array $row, array $columnMap): bool
+    {
+        $name = CellValueNormalizer::normalizeHeader(
+            CellValueNormalizer::toString($row[$columnMap['name']] ?? null),
+        );
+
+        if ($name === '') {
+            return false;
+        }
+
+        return $this->headerMatches($name, ['channel', 'delivery method', 'канал', 'имя'])
+            || $name === 'name'
+            || $name === 'method';
     }
 
     /**
@@ -275,7 +346,14 @@ final class OzonTariffSheetParser
 
         $minWeight = null;
         $maxWeight = null;
-        if (isset($columnMap['weight'])) {
+        if (isset($columnMap['weight_min']) || isset($columnMap['weight_max'])) {
+            if (isset($columnMap['weight_min'])) {
+                $minWeight = CellValueNormalizer::parseDecimal($row[$columnMap['weight_min']] ?? null);
+            }
+            if (isset($columnMap['weight_max'])) {
+                $maxWeight = CellValueNormalizer::parseDecimal($row[$columnMap['weight_max']] ?? null);
+            }
+        } elseif (isset($columnMap['weight'])) {
             $range = CellValueNormalizer::parseRange($row[$columnMap['weight']] ?? null);
             if ($range === null && CellValueNormalizer::toString($row[$columnMap['weight']] ?? null) !== '') {
                 $errors[] = new ImportErrorDraft(
@@ -362,6 +440,12 @@ final class OzonTariffSheetParser
                 'rate' => CellValueNormalizer::toString($rateRaw),
                 'weight' => isset($columnMap['weight'])
                     ? CellValueNormalizer::toString($row[$columnMap['weight']] ?? null)
+                    : null,
+                'weight_min' => isset($columnMap['weight_min'])
+                    ? CellValueNormalizer::toString($row[$columnMap['weight_min']] ?? null)
+                    : null,
+                'weight_max' => isset($columnMap['weight_max'])
+                    ? CellValueNormalizer::toString($row[$columnMap['weight_max']] ?? null)
                     : null,
                 'limits' => isset($columnMap['limits'])
                     ? CellValueNormalizer::toString($row[$columnMap['limits']] ?? null)

@@ -107,6 +107,18 @@ final class TariffWorkbookParser
             }
         }
 
+        // Исходник без "ozon" в имени: "тарифы без формул + лимиты".
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            $normalized = CellValueNormalizer::normalizeSheetName($sheet->getTitle());
+            if (str_contains($normalized, 'формулами') || str_contains($normalized, 'yandex') || str_contains($normalized, 'яндекс')) {
+                continue;
+            }
+
+            if (str_contains($normalized, 'лимит') || str_contains($normalized, 'без формул')) {
+                return $sheet;
+            }
+        }
+
         return null;
     }
 
@@ -119,13 +131,21 @@ final class TariffWorkbookParser
             }
         }
 
+        // Исходник упоминает Yandex в описании: берём лист, где есть оба канала.
+        $fallback = null;
         foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
             $rows = $sheet->toArray(null, false, false, false);
-            if ($this->yandexTariffSheetParser->sheetContainsYandexSection($rows)) {
+            if (! $this->yandexTariffSheetParser->sheetContainsYandexSection($rows)) {
+                continue;
+            }
+
+            if ($this->yandexTariffSheetParser->sheetHasRequiredChannels($rows)) {
                 return $sheet;
             }
+
+            $fallback ??= $sheet;
         }
 
-        return null;
+        return $fallback;
     }
 }

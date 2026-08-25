@@ -39,6 +39,7 @@ final class CellValueNormalizerTest extends TestCase
             'with yen' => ['¥ 3.37 + ¥ 0.0505/1 g', '3.37000000', '0.05050000'],
             'plain' => ['3.37 + 0.0505/g', '3.37000000', '0.05050000'],
             'compact' => ['¥40.44 + ¥0.0281/1 g', '40.44000000', '0.02810000'],
+            'leading tab' => ["\t¥ 24.71 + ¥ 0.0505/1 g", '24.71000000', '0.05050000'],
         ];
     }
 
@@ -63,9 +64,22 @@ final class CellValueNormalizerTest extends TestCase
     {
         $this->assertSame(['1.00000000', '1500.00000000'], CellValueNormalizer::parseRange('1 - 1500'));
         $this->assertSame(['1.00000000', '1500.00000000'], CellValueNormalizer::parseRange('1–1500'));
+        $this->assertSame(['135.01000000', '635.00000000'], CellValueNormalizer::parseRange('135. 01 - 635'));
+        $this->assertSame(['7001.00000000', '250000.00000000'], CellValueNormalizer::parseRange('7001 - 250 000'));
+        $this->assertSame(['635.01000000', '22525.00000000'], CellValueNormalizer::parseRange('635.01 - 22 525'));
 
         $limits = CellValueNormalizer::parseDimensionLimits('Sum of sides ≤ 90 cm, length ≤ 60 cm');
         $this->assertSame('90.00000000', $limits['max_sum_dimensions_cm']);
         $this->assertSame('60.00000000', $limits['max_length_cm']);
+
+        $premium = CellValueNormalizer::parseDimensionLimits('Sum of sides ≤ 250 cm, length ≤ 150 cm.');
+        $this->assertSame('250.00000000', $premium['max_sum_dimensions_cm']);
+        $this->assertSame('150.00000000', $premium['max_length_cm']);
+    }
+
+    public function test_parse_leading_decimal_from_yandex_cells(): void
+    {
+        $this->assertSame('948.00000000', CellValueNormalizer::parseLeadingDecimal('948 ₽/кг'));
+        $this->assertSame('193.00000000', CellValueNormalizer::parseLeadingDecimal('193 ₽/шт'));
     }
 }

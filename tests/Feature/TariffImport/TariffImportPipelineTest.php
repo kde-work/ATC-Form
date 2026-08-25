@@ -77,6 +77,22 @@ final class TariffImportPipelineTest extends TestCase
         $this->assertNotNull($big);
         $this->assertSame(WeightCalculationType::MaxPhysicalOrVolumetric, $big->chargeable_weight_type);
         $this->assertSame('12000.0000', (string) $big->volumetric_divisor);
+        $this->assertSame('310.000', (string) $big->max_sum_dimensions_cm);
+        $this->assertSame('150.000', (string) $big->max_length_cm);
+
+        $budget = $revision->channels()
+            ->where('code', 'atc-economy-budget')
+            ->first();
+        $this->assertNotNull($budget);
+        $this->assertSame('30000.000', (string) $budget->max_weight_grams);
+        $this->assertSame('1500.0000', (string) $budget->max_order_cost_rub);
+
+        $extraSmall = $revision->channels()
+            ->where('code', 'atc-express-extra-small')
+            ->first();
+        $this->assertNotNull($extraSmall);
+        $this->assertSame('500.000', (string) $extraSmall->max_weight_grams);
+        $this->assertSame('1500.0000', (string) $extraSmall->max_order_cost_rub);
 
         $summary = $import->summary_json;
         $this->assertIsArray($summary);
@@ -248,6 +264,55 @@ final class TariffImportPipelineTest extends TestCase
             new UploadedFile($txt, 'notes.txt', null, null, true),
             $user,
         );
+    }
+
+    /**
+     * Компактный layout Channel/Weight g/Rate остаётся валидным.
+     */
+    public function test_legacy_compact_xlsx_still_imports(): void
+    {
+        $path = $this->fixturesDir . DIRECTORY_SEPARATOR . 'legacy-compact.xlsx';
+        TariffsXlsxFixtureBuilder::writeLegacyCompact($path, TariffsXlsxFixtureBuilder::defaultOzonRows());
+
+        $import = $this->service()->uploadAndProcess(
+            new UploadedFile($path, 'legacy-compact.xlsx', null, null, true),
+            User::factory()->create(),
+        );
+
+        $this->assertSame(ImportStatus::Validated, $import->status);
+        $budget = $import->revision?->channels()->where('code', 'atc-economy-budget')->first();
+        $this->assertNotNull($budget);
+        $this->assertSame('30000.000', (string) $budget->max_weight_grams);
+    }
+
+    /**
+     * Исходный XLSX заказчика: пробелы в CNY-диапазонах и таблица Yandex.
+     */
+    public function test_customer_workbook_imports_real_limits(): void
+    {
+        $path = TariffsXlsxFixtureBuilder::path('customer-ozon-ym.xlsx');
+        $this->assertFileExists($path);
+
+        $import = $this->service()->uploadAndProcess(
+            new UploadedFile($path, 'customer-ozon-ym.xlsx', null, null, true),
+            User::factory()->create(),
+        );
+
+        $this->assertSame(ImportStatus::Validated, $import->status, (string) json_encode(
+            $import->errors()->get(['field', 'message'])->all(),
+        ));
+
+        $premiumSmall = $import->revision?->channels()->where('code', 'atc-express-premium-small')->first();
+        $this->assertNotNull($premiumSmall);
+        $this->assertSame('250.000', (string) $premiumSmall->max_sum_dimensions_cm);
+        $this->assertSame('150.000', (string) $premiumSmall->max_length_cm);
+        $this->assertSame('22525.0000', (string) $premiumSmall->max_order_cost_cny);
+        $this->assertSame('250000.0000', (string) $premiumSmall->max_order_cost_rub);
+
+        $yandex = $import->revision?->channels()->where('code', 'super-express')->first();
+        $this->assertNotNull($yandex);
+        $this->assertSame('193.000000', (string) $yandex->fixed_fee);
+        $this->assertSame('948.000000', (string) $yandex->per_kg_fee);
     }
 
     private function service(): TariffImportService

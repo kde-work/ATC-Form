@@ -8,142 +8,182 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
- * Сборка тестовых XLSX по docs/xlsx-import-format.md.
+ * Сборка тестовых XLSX по docs/xlsx-import-format.md и исходному файлу заказчика.
  */
 final class TariffsXlsxFixtureBuilder
 {
     /**
-     * @return list<array{name: string, weight: string, rate: string, limits: string, order_cny: string, order_rub: string}>
+     * Строки Ozon в формате исходника: отдельные min/max g, RUB и CNY.
+     *
+     * @return list<array{
+     *     name: string,
+     *     rate: string,
+     *     limits: string,
+     *     min_weight: string,
+     *     max_weight: string,
+     *     order_cny: string,
+     *     order_rub: string,
+     *     tarification: string
+     * }>
      */
     public static function defaultOzonRows(): array
     {
         return [
             [
                 'name' => 'ATC Express Extra Small',
-                'weight' => '1 - 1500',
-                'rate' => '¥ 4.10 + ¥ 0.0600/1 g',
+                'rate' => '¥ 3.37 + ¥ 0.0505/1 g',
                 'limits' => 'Sum of sides ≤ 90 cm, length ≤ 60 cm',
-                'order_cny' => '100.00 - 700.00',
-                'order_rub' => '',
+                'min_weight' => '1',
+                'max_weight' => '500',
+                'order_cny' => '0.01 - 135',
+                'order_rub' => '1 - 1500',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Standard Extra Small',
-                'weight' => '1 - 1500',
-                'rate' => '¥ 3.37 + ¥ 0.0505/1 g',
+                'rate' => '¥ 3.37 + ¥ 0.0393/1 g',
                 'limits' => 'Sum of sides ≤ 90 cm, length ≤ 60 cm',
-                'order_cny' => '135.01 - 635.00',
-                'order_rub' => '',
+                'min_weight' => '1',
+                'max_weight' => '500',
+                'order_cny' => '0.01 - 135',
+                'order_rub' => '1 - 1500',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Economy Extra Small',
-                'weight' => '1 - 1500',
-                'rate' => '¥ 2.90 + ¥ 0.0400/1 g',
+                'rate' => '¥ 3.37 + ¥ 0.0281/1 g',
                 'limits' => 'Sum of sides ≤ 90 cm, length ≤ 60 cm',
-                'order_cny' => '100.00 - 600.00',
-                'order_rub' => '',
+                'min_weight' => '1',
+                'max_weight' => '500',
+                'order_cny' => '0.01 - 135',
+                'order_rub' => '1 - 1500',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Standard Budget',
-                'weight' => '1 - 2000',
-                'rate' => '¥ 2.50 + ¥ 0.0350/1 g',
-                'limits' => 'Sum of sides ≤ 100 cm, length ≤ 70 cm',
-                'order_cny' => '50.00 - 500.00',
-                'order_rub' => '',
+                'rate' => '¥ 25.83 + ¥ 0.0281/1 g',
+                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 60 cm',
+                'min_weight' => '501',
+                'max_weight' => '30000',
+                'order_cny' => '0.01 - 135',
+                'order_rub' => '1 - 1500',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Economy Budget',
-                'weight' => '1 - 2000',
-                'rate' => '¥ 2.10 + ¥ 0.0300/1 g',
-                'limits' => 'Sum of sides ≤ 100 cm, length ≤ 70 cm',
-                'order_cny' => '50.00 - 500.00',
-                'order_rub' => '',
+                'rate' => '¥ 25.83 + ¥ 0.0191/1 g',
+                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 60 cm',
+                'min_weight' => '501',
+                'max_weight' => '30000',
+                'order_cny' => '0.01 - 135',
+                'order_rub' => '1 - 1500',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Express Small',
-                'weight' => '1 - 5000',
-                'rate' => '¥ 8.00 + ¥ 0.0450/1 g',
-                'limits' => 'Sum of sides ≤ 120 cm, length ≤ 80 cm',
-                'order_cny' => '100.00 - 1500.00',
-                'order_rub' => '',
+                'rate' => '¥ 17.97 + ¥ 0.0505/1 g',
+                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 60 cm',
+                'min_weight' => '1',
+                'max_weight' => '2000',
+                'order_cny' => '135.01 - 635',
+                'order_rub' => '1501 - 7000',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Standard Small',
-                'weight' => '1 - 5000',
-                'rate' => '¥ 6.50 + ¥ 0.0380/1 g',
-                'limits' => 'Sum of sides ≤ 120 cm, length ≤ 80 cm',
-                'order_cny' => '100.00 - 1500.00',
-                'order_rub' => '',
+                'rate' => '¥ 17.97 + ¥ 0.0393/1 g',
+                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 60 cm',
+                'min_weight' => '1',
+                'max_weight' => '2000',
+                'order_cny' => '135.01 - 635',
+                'order_rub' => '1501 - 7000',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Economy Small',
-                'weight' => '1 - 5000',
-                'rate' => '¥ 5.20 + ¥ 0.0320/1 g',
-                'limits' => 'Sum of sides ≤ 120 cm, length ≤ 80 cm',
-                'order_cny' => '100.00 - 1500.00',
-                'order_rub' => '',
+                'rate' => '¥ 17.97 + ¥ 0.0281/1 g',
+                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 60 cm',
+                'min_weight' => '1',
+                'max_weight' => '2000',
+                'order_cny' => '135.01 - 635',
+                'order_rub' => '1501 - 7000',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Standard Big',
-                'weight' => '1 - 30000',
                 'rate' => '¥ 40.44 + ¥ 0.0281/1 g',
-                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 100 cm',
-                'order_cny' => '',
-                'order_rub' => '',
+                'limits' => 'Sum of sides ≤ 310 cm, length ≤ 150 cm',
+                'min_weight' => '2001',
+                'max_weight' => '30000',
+                'order_cny' => '135.01 - 635',
+                'order_rub' => '1501 - 7000',
+                'tarification' => 'Max weight between the physical and volume ones',
             ],
             [
                 'name' => 'ATC Economy Big',
-                'weight' => '1 - 30000',
-                'rate' => '¥ 35.00 + ¥ 0.0250/1 g',
-                'limits' => 'Sum of sides ≤ 150 cm, length ≤ 100 cm',
-                'order_cny' => '',
-                'order_rub' => '',
+                'rate' => '¥ 40.44 + ¥ 0.0191/1 g',
+                'limits' => 'Sum of sides ≤ 310 cm, length ≤ 150 cm',
+                'min_weight' => '2001',
+                'max_weight' => '30000',
+                'order_cny' => '135.01 - 635',
+                'order_rub' => '1501 - 7000',
+                'tarification' => 'Max weight between the physical and volume ones',
             ],
             [
                 'name' => 'ATC Express Premium Small',
-                'weight' => '1 - 5000',
-                'rate' => '¥ 12.00 + ¥ 0.0550/1 g',
-                'limits' => 'Sum of sides ≤ 120 cm, length ≤ 80 cm',
-                'order_cny' => '200.00 - 2000.00',
-                'order_rub' => '',
+                'rate' => '¥ 24.71 + ¥ 0.0505/1 g',
+                'limits' => 'Sum of sides ≤ 250 cm, length ≤ 150 cm.',
+                'min_weight' => '1',
+                'max_weight' => '5000',
+                'order_cny' => '635.01 - 22525',
+                'order_rub' => '7001 - 250000',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Standard Premium Small',
-                'weight' => '1 - 5000',
-                'rate' => '¥ 10.00 + ¥ 0.0480/1 g',
-                'limits' => 'Sum of sides ≤ 120 cm, length ≤ 80 cm',
-                'order_cny' => '200.00 - 2000.00',
-                'order_rub' => '',
+                'rate' => '¥ 24.71 + ¥ 0.0393/1 g',
+                'limits' => 'Sum of sides ≤ 250 cm, length ≤ 150 cm.',
+                'min_weight' => '1',
+                'max_weight' => '5000',
+                'order_cny' => '635.01 - 22525',
+                'order_rub' => '7001 - 250000',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Economy Premium Small',
-                'weight' => '1 - 5000',
-                'rate' => '¥ 8.50 + ¥ 0.0420/1 g',
-                'limits' => 'Sum of sides ≤ 120 cm, length ≤ 80 cm',
-                'order_cny' => '200.00 - 2000.00',
-                'order_rub' => '',
+                'rate' => '¥ 24.71 + ¥ 0.0281/1 g',
+                'limits' => 'Sum of sides ≤ 250 cm, length ≤ 150 cm.',
+                'min_weight' => '1',
+                'max_weight' => '5000',
+                'order_cny' => '635.01 - 22525',
+                'order_rub' => '7001 - 250000',
+                'tarification' => 'Physical weight',
             ],
             [
                 'name' => 'ATC Standard Premium Big',
-                'weight' => '1 - 30000',
-                'rate' => '¥ 50.00 + ¥ 0.0300/1 g',
-                'limits' => 'Sum of sides ≤ 160 cm, length ≤ 110 cm',
-                'order_cny' => '',
-                'order_rub' => '',
+                'rate' => '¥ 69.64 + ¥ 0.0314/1 g',
+                'limits' => 'Sum of sides ≤ 310 cm, length ≤ 150 cm',
+                'min_weight' => '5001',
+                'max_weight' => '30000',
+                'order_cny' => '635.01 - 22525',
+                'order_rub' => '7001 - 250000',
+                'tarification' => 'Max weight between the physical and volume ones',
             ],
             [
                 'name' => 'ATC Economy Premium Big',
-                'weight' => '1 - 30000',
-                'rate' => '¥ 45.00 + ¥ 0.0270/1 g',
-                'limits' => 'Sum of sides ≤ 160 cm, length ≤ 110 cm',
-                'order_cny' => '',
-                'order_rub' => '',
+                'rate' => '¥ 69.64 + ¥ 0.0258/1 g',
+                'limits' => 'Sum of sides ≤ 310 cm, length ≤ 150 cm',
+                'min_weight' => '5001',
+                'max_weight' => '30000',
+                'order_cny' => '635.01 - 22525',
+                'order_rub' => '7001 - 250000',
+                'tarification' => 'Max weight between the physical and volume ones',
             ],
         ];
     }
 
     /**
-     * @param list<array{name: string, weight: string, rate: string, limits: string, order_cny: string, order_rub: string}>|null $ozonRows
-     * @param list<array{name: string, rate: string}>|null $yandexRows
+     * @param list<array<string, string>>|null $ozonRows
      */
     public static function write(
         string $absolutePath,
@@ -153,17 +193,22 @@ final class TariffsXlsxFixtureBuilder
         string $yandexSheetName = 'тарифы с формулами EXCEL',
     ): void {
         $ozonRows ??= self::defaultOzonRows();
-        $yandexRows ??= [
-            ['name' => 'Super Express 空运卡航', 'rate' => '193 + 948 RUB/kg'],
-            ['name' => 'Express 卡航陆运', 'rate' => '198 RUB + 787 /kg'],
-        ];
 
         $spreadsheet = new Spreadsheet();
         $ozonSheet = $spreadsheet->getActiveSheet();
         $ozonSheet->setTitle($ozonSheetName);
 
         $ozonSheet->fromArray(
-            ['Channel', 'Weight g', 'Rate', 'Limits', 'Order CNY', 'Order RUB'],
+            [
+                'Delivery Method',
+                'Rates (PUDO / Courier)',
+                'Measurements, max cm',
+                'Shipment weight limits / min g',
+                'Shipment weight limits / max g',
+                'Shipment cost limit / min-max  | RUB',
+                'Shipment cost limit / min-max  | CNY',
+                'Tarification type',
+            ],
             null,
             'A1',
         );
@@ -172,11 +217,13 @@ final class TariffsXlsxFixtureBuilder
         foreach ($ozonRows as $row) {
             $ozonSheet->fromArray([
                 $row['name'],
-                $row['weight'],
                 $row['rate'],
-                $row['limits'],
-                $row['order_cny'],
-                $row['order_rub'],
+                $row['limits'] ?? '',
+                $row['min_weight'] ?? '',
+                $row['max_weight'] ?? '',
+                $row['order_rub'] ?? '',
+                $row['order_cny'] ?? '',
+                $row['tarification'] ?? '',
             ], null, 'A' . $rowNumber);
             $rowNumber++;
         }
@@ -184,16 +231,84 @@ final class TariffsXlsxFixtureBuilder
         $yandexSheet = $spreadsheet->createSheet();
         $yandexSheet->setTitle($yandexSheetName);
         $yandexSheet->setCellValue('A1', 'Yandex Market');
-        $yandexSheet->setCellValue('A2', 'Channel');
-        $yandexSheet->setCellValue('B2', 'Rate');
+        $yandexSheet->setCellValue('A2', 'Параметр');
+        $yandexSheet->setCellValue('B2', 'Super Express (空运卡航)');
+        $yandexSheet->setCellValue('C2', 'Express (卡航陆运)');
+        $yandexSheet->setCellValue('A3', 'Ставка за кг');
+        $yandexSheet->setCellValue('B3', '948 ₽/кг');
+        $yandexSheet->setCellValue('C3', '787 ₽/кг');
+        $yandexSheet->setCellValue('A4', 'Фиксированная ставка за заказ');
+        $yandexSheet->setCellValue('B4', '193 ₽/шт');
+        $yandexSheet->setCellValue('C4', '198 ₽/шт');
 
-        $yandexRow = 3;
-        foreach ($yandexRows as $row) {
-            $yandexSheet->setCellValue('A' . $yandexRow, $row['name']);
-            $yandexSheet->setCellValue('B' . $yandexRow, $row['rate']);
-            $yandexRow++;
+        if ($yandexRows !== null) {
+            $yandexRow = 6;
+            $yandexSheet->setCellValue('A5', 'Channel');
+            $yandexSheet->setCellValue('B5', 'Rate');
+            foreach ($yandexRows as $row) {
+                $yandexSheet->setCellValue('A' . $yandexRow, $row['name']);
+                $yandexSheet->setCellValue('B' . $yandexRow, $row['rate']);
+                $yandexRow++;
+            }
         }
 
+        self::save($spreadsheet, $absolutePath);
+    }
+
+    /**
+     * Компактный layout тестов: Weight g диапазоном и ставка в одной ячейке.
+     *
+     * @param list<array<string, string>> $ozonRows
+     */
+    public static function writeLegacyCompact(string $absolutePath, array $ozonRows): void
+    {
+        $spreadsheet = new Spreadsheet();
+        $ozonSheet = $spreadsheet->getActiveSheet();
+        $ozonSheet->setTitle('тарифы Ozon без формул + лимиты');
+        $ozonSheet->fromArray(
+            ['Channel', 'Weight g', 'Rate', 'Limits', 'Order CNY', 'Order RUB'],
+            null,
+            'A1',
+        );
+
+        $rowNumber = 2;
+        foreach ($ozonRows as $row) {
+            $weight = $row['weight'] ?? '';
+            if ($weight === '' && isset($row['min_weight'], $row['max_weight'])) {
+                $weight = $row['min_weight'] . ' - ' . $row['max_weight'];
+            }
+
+            $ozonSheet->fromArray([
+                $row['name'],
+                $weight,
+                $row['rate'],
+                $row['limits'] ?? '',
+                $row['order_cny'] ?? '',
+                $row['order_rub'] ?? '',
+            ], null, 'A' . $rowNumber);
+            $rowNumber++;
+        }
+
+        $yandexSheet = $spreadsheet->createSheet();
+        $yandexSheet->setTitle('тарифы с формулами EXCEL');
+        $yandexSheet->setCellValue('A1', 'Yandex Market');
+        $yandexSheet->setCellValue('A2', 'Channel');
+        $yandexSheet->setCellValue('B2', 'Rate');
+        $yandexSheet->setCellValue('A3', 'Super Express 空运卡航');
+        $yandexSheet->setCellValue('B3', '193 + 948 RUB/kg');
+        $yandexSheet->setCellValue('A4', 'Express 卡航陆运');
+        $yandexSheet->setCellValue('B4', '198 RUB + 787 /kg');
+
+        self::save($spreadsheet, $absolutePath);
+    }
+
+    public static function path(string $filename): string
+    {
+        return dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'xlsx' . DIRECTORY_SEPARATOR . $filename;
+    }
+
+    private static function save(Spreadsheet $spreadsheet, string $absolutePath): void
+    {
         $directory = dirname($absolutePath);
         if (! is_dir($directory)) {
             mkdir($directory, 0777, true);
@@ -201,10 +316,5 @@ final class TariffsXlsxFixtureBuilder
 
         (new Xlsx($spreadsheet))->save($absolutePath);
         $spreadsheet->disconnectWorksheets();
-    }
-
-    public static function path(string $filename): string
-    {
-        return dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Fixtures' . DIRECTORY_SEPARATOR . 'xlsx' . DIRECTORY_SEPARATOR . $filename;
     }
 }

@@ -17,8 +17,8 @@ PhpSpreadsheet читает **уже вычисленные значения я�
 
 | Назначение | Типичные имена | Как узнать |
 |------------|----------------|------------|
-| Ozon | `тарифы Ozon без формул + лимиты`, `ozon tariffs`, `ozon` | имя содержит `ozon` |
-| Yandex | лист `тарифы с формулами EXCEL` или любой лист, где есть секция Yandex Market | имя содержит `yandex`, либо на листе заголовок секции `yandex market` / `яндекс` |
+| Ozon | `тарифы Ozon без формул + лимиты`, `тарифы без формул + лимиты`, `ozon tariffs`, `ozon` | имя содержит `ozon`, иначе лист с `лимит` / `без формул` (не `формулами`) |
+| Yandex | лист `тарифы с формулами EXCEL` или любой лист, где есть секция Yandex Market | имя содержит `yandex`; иначе лист с секцией `yandex market` / `яндекс`, предпочтительно где есть оба канала Super Express и Express (описание калькулятора с упоминанием YM не выбирается) |
 
 Если Ozon-лист не найден: ошибка импорта без row (`field`: `workbook`, сообщение что лист Ozon не найден).  
 Если Yandex-секция не найдена: то же для Yandex. Оба листа обязательны для валидного импорта.
@@ -31,6 +31,8 @@ PhpSpreadsheet читает **уже вычисленные значения я�
 - Строка-заголовок: не тариф. Заголовок узнаём по ключевым словам (`name`, `канал`, `weight`, `вес`, `rate`, `тариф`, `limit`).
 - Числа: допускать запятую и точку как десятичный разделитель; пробелы-разделители тысяч убирать; символ валюты (`¥`, `₽`, `CNY`, `RUB`) отбрасывать до числа.
 - Диапазон веса `1 - 1500`, `1–1500`, `1..1500`: левая граница -> `min_weight_grams`, правая -> `max_weight_grams`.
+- Отдельные колонки min g / max g: каждое число в свою границу.
+- Диапазон стоимости с пробелом в числе: `135. 01 - 635`, `7001 - 250 000`.
 - Нечисловой мусор в тарифной ячейке: ошибка этой строки, не всего файла.
 
 ## Код канала (`code`)
@@ -90,7 +92,21 @@ PhpSpreadsheet читает **уже вычисленные значения я�
 - `max_sum_dimensions_cm` > 0 если задан
 - лимиты стоимости заказа: nullable пары CNY и/или RUB
 
-Колонки в исходнике могут называться по-разному. Искать по нормализованному заголовку (lowercase, без лишних пробелов): имя/channel/name, weight/вес, rate/тариф/fee, limits/ограничения, order/заказ/cost.
+Колонки в исходнике заказчика (лист `тарифы Ozon без формул + лимиты` или `тарифы без формул + лимиты`):
+
+| Заголовок | Поле |
+|-----------|------|
+| Delivery Method | name |
+| Rates (PUDO / Courier) | fixed_fee + per_gram_fee |
+| Measurements, max cm | max_sum_dimensions_cm, max_length_cm |
+| Shipment weight limits / min g | min_weight_grams |
+| Shipment weight limits / max g | max_weight_grams |
+| Shipment cost limit / min-max \| RUB | min/max_order_cost_rub |
+| Shipment cost limit / min-max \| CNY | min/max_order_cost_cny |
+
+Допустим и компактный layout: `Channel`, `Weight g` (диапазон `1 - 1500`), `Rate`, `Limits`, `Order CNY`, `Order RUB`.
+
+Искать по нормализованному заголовку (lowercase, без лишних пробелов): delivery method/channel/name, weight min/max или weight/вес, rate/тариф/fee, measurements/limits/ограничения, cost+RUB, cost+CNY.
 
 ### Ставка вида `¥ 3.37 + ¥ 0.0505/1 g`
 
@@ -140,23 +156,25 @@ sum of sides <= 90cm, length <= 60cm
 
 Лист `тарифы Ozon без формул + лимиты`:
 
-| Channel | Weight g | Rate | Limits | Order CNY | Order RUB |
-|---------|----------|------|--------|-----------|-----------|
-| ATC Standard Extra Small | 1 - 1500 | ¥ 3.37 + ¥ 0.0505/1 g | Sum of sides ≤ 90 cm, length ≤ 60 cm | 135.01 - 635.00 | |
-| ATC Standard Big | 1 - 30000 | ¥ 40.44 + ¥ 0.0281/1 g | Sum of sides ≤ 150 cm, length ≤ 100 cm | | |
+| Delivery Method | Rates | Measurements | min g | max g | Order RUB | Order CNY |
+|-----------------|-------|--------------|-------|-------|-----------|-----------|
+| ATC Standard Extra Small | ¥ 3.37 + ¥ 0.0393/1 g | Sum of sides ≤ 90 cm, length ≤ 60 cm | 1 | 500 | 1 - 1500 | 0.01 - 135 |
+| ATC Standard Big | ¥ 40.44 + ¥ 0.0281/1 g | Sum of sides ≤ 310 cm, length ≤ 150 cm | 2001 | 30000 | 1501 - 7000 | 135.01 - 635 |
 
 После парсинга Extra Small:
 
 - platform `ozon`, code `atc-standard-extra-small`
-- min_weight 1, max_weight 1500
-- fixed 3.37, per_gram 0.0505, currency CNY
+- min_weight 1, max_weight 500
+- fixed 3.37, per_gram 0.0393, currency CNY
 - type `physical`
 - max_sum 90, max_length 60
-- min_order_cost_cny 135.01, max_order_cost_cny 635.00
+- min_order_cost_rub 1, max_order_cost_rub 1500
+- min_order_cost_cny 0.01, max_order_cost_cny 135
 
 Big:
 
 - type `max_physical_or_volumetric`, divisor 12000
+- max_sum 310, max_length 150
 
 Числа в fixture могут отличаться от боевых тарифов заказчика. Для тестов расчёта важна согласованность fixture и unit-кейсов.
 
@@ -165,6 +183,11 @@ Big:
 ## Yandex Market
 
 Секция на листе (часто рядом с формулами, которые **игнорировать**). Искать заголовок секции и две строки каналов.
+
+Два layout:
+
+1. Строка канала: имя Super Express / Express в первой колонке, ставка `193 + 948 RUB/kg`.
+2. Таблица исходника: шапка с именами каналов, строки `Ставка за кг` (`948 ₽/кг`) и `Фиксированная ставка` (`193 ₽/шт`).
 
 Каналы:
 
@@ -244,7 +267,8 @@ Workbook: Ozon channel 'ATC Economy Premium Big' is missing.
 
 | Файл | Ожидание |
 |------|----------|
-| `valid-tariffs.xlsx` | 15 Ozon + 2 Yandex, import `validated`, draft revision |
+| `valid-tariffs.xlsx` | 15 Ozon + 2 Yandex, layout исходника заказчика |
+| `customer-ozon-ym.xlsx` | копия исходного файла заказчика |
 | `invalid-duplicate-code.xlsx` | `validation_failed`, ошибка с sheet и row |
 | `invalid-broken-rate.xlsx` | строка Ozon с неразбираемой ставкой |
 

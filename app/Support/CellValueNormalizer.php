@@ -65,7 +65,28 @@ final class CellValueNormalizer
     }
 
     /**
+     * Первое число в ячейке: "948 ₽/кг", "193 ₽/шт", "135. 01".
+     *
+     * @return numeric-string|null
+     */
+    public static function parseLeadingDecimal(mixed $value): ?string
+    {
+        $raw = self::toString($value);
+        if ($raw === '') {
+            return null;
+        }
+
+        $cleaned = preg_replace('/[¥₽$€]|CNY|RUB|USD|EUR/iu', '', $raw) ?? $raw;
+        if (! preg_match('/([0-9]+(?:[.\s]*[0-9]+)*)/u', $cleaned, $matches)) {
+            return null;
+        }
+
+        return self::parseDecimal($matches[1]);
+    }
+
+    /**
      * Разбор диапазона веса или стоимости: "1 - 1500", "1–1500", "1..1500".
+     * Допускает пробел в числе: "135. 01 - 635", "7001 - 250 000".
      *
      * @return array{0: numeric-string, 1: numeric-string}|null
      */
@@ -76,9 +97,13 @@ final class CellValueNormalizer
             return null;
         }
 
+        $normalized = preg_replace('/[¥₽$€]|CNY|RUB|USD|EUR/iu', '', $raw) ?? $raw;
+        $normalized = str_replace("\u{00A0}", ' ', $normalized);
+        $normalized = preg_replace('/\s+/u', ' ', trim($normalized)) ?? trim($normalized);
+
         if (! preg_match(
-            '/^\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:-|–|\.\.|—)\s*([0-9]+(?:[.,][0-9]+)?)\s*$/u',
-            $raw,
+            '/^([0-9][0-9\s.,]*)\s*(?:-|–|\.\.|—)\s*([0-9][0-9\s.,]*)$/u',
+            $normalized,
             $matches,
         )) {
             return null;
