@@ -5,7 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "build:frontend": "npm --prefix frontend ci && npm --prefix frontend run build"
+        "build:frontend": "npm --prefix frontend run build",
+        "build:frontend:ci": "npm --prefix frontend ci && npm --prefix frontend run build"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

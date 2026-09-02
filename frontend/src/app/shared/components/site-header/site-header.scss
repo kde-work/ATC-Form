@@ -16,7 +16,7 @@
 
 .site-header__logo {
   display: block;
-  height: 2.75rem;
+  height: 3.35rem;
   width: auto;
   max-width: min(220px, 55vw);
   object-fit: contain;
@@ -24,7 +24,7 @@
 
 .site-header__title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }

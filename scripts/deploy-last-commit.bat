@@ -1,35 +1,41 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
+chcp 65001 >nul
 
 cd /d "%~dp0.."
 if errorlevel 1 (
-    echo Не удалось перейти в корень проекта.
+    echo Failed to change directory to repo root.
     exit /b 1
 )
 
-set "HOST=rostudio.myjino.ru"
-set "PORT=2222"
-set "USER=rostudio"
-set "REMOTE=/domains/express-consol.kutalo.com"
+call "%~dp0_load-sftp-config.bat"
+if errorlevel 1 exit /b 1
 
-echo Файлы из последнего коммита для загрузки:
+echo Config: .vscode\sftp.json
+echo Remote: %SFTP_USER%@%HOST%:%REMOTE%/
+echo.
+echo Files from last commit to upload:
 echo.
 
 set "COUNT=0"
 for /f "delimiters=" %%f in ('git diff-tree --no-commit-id --name-only -r HEAD -- app/') do (
     set /a COUNT+=1
     echo   %%f
-    scp -P %PORT% "%%f" %USER%@%HOST%:%REMOTE%/%%f
+    if "!SFTP_KEY!"=="" (
+        scp -P %PORT% -o StrictHostKeyChecking=accept-new "%%f" %SFTP_USER%@%HOST%:%REMOTE%/%%f
+    ) else (
+        scp -P %PORT% -o StrictHostKeyChecking=accept-new -i "!SFTP_KEY!" "%%f" %SFTP_USER%@%HOST%:%REMOTE%/%%f
+    )
     if errorlevel 1 (
-        echo Ошибка загрузки: %%f
+        echo Upload failed: %%f
         exit /b 1
     )
 )
 
 if "!COUNT!"=="0" (
-    echo В последнем коммите нет файлов из app/
+    echo No app/ files in the last commit.
     exit /b 0
 )
 
 echo.
-echo Готово. Загружено файлов: !COUNT!
+echo Done. Uploaded files: !COUNT!

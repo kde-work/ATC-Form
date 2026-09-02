@@ -120,6 +120,18 @@ npm test -- --watch=false
 npm run build
 ```
 
+## Деплой на хостинг (SFTP)
+
+Креды: `.vscode/sftp.json` (`host`, `port`, `username`, `password`, `remotePath`). Нужны Node.js и OpenSSH `scp`.
+
+```bat
+scripts\deploy-last-commit.bat
+scripts\deploy-frontend.bat
+```
+
+- `deploy-last-commit.bat` — файлы из `app/` последнего git-коммита на сервер
+- `deploy-frontend.bat` — `frontend/dist/frontend/browser/*` → `public/` на сервере (сначала `cd frontend && npm run build`)
+
 ## XLSX импорт
 
 Правила парсинга, статусы и примеры ошибок: [docs/xlsx-import-format.md](docs/xlsx-import-format.md).
