@@ -27,7 +27,7 @@ export class CalculatorApiService {
     );
   }
 
-  /** @deprecated Платформы фиксированы в CALCULATOR_PLATFORMS; не вызывать с /calculator. */
+  /** @deprecated Платформы фиксированы в CALCULATOR_PLATFORMS; не вызывать с формы калькулятора. */
   getPlatforms(): Observable<PlatformDto[]> {
     return this.cache.getOrLoad('platforms', () =>
       this.http.get<PlatformDto[]>(`${this.baseUrl}/platforms`),

@@ -90,7 +90,7 @@ PhpSpreadsheet читает **значения ячеек**. Формулы Exce
 
 Angular:
 
-- `/calculator` без токена;
+- `/` (калькулятор) без токена;
 - `/admin/**` только с токеном, иначе редирект на `/admin/login`.
 
 ## Как Angular ходит в API
@@ -108,7 +108,7 @@ Angular:
 
 | Метод | Путь | Поведение |
 |-------|------|-----------|
-| GET | `/api/v1/calculator/bootstrap` | Один ответ: platforms + все active delivery_channels активной ревизии + public settings. Для презагрузки формы `/calculator` |
+| GET | `/api/v1/calculator/bootstrap` | Один ответ: platforms + все active delivery_channels активной ревизии + public settings. Для презагрузки формы калькулятора |
 | GET | `/api/v1/platforms` | Фиксированный список: `ozon`, `yandex_market` (из того же кэша) |
 | GET | `/api/v1/delivery-channels?platform=` | `active=true` каналы **активной** ревизии (фильтр из кэша). Нет active-ревизии: пустой массив `[]`, не ошибка |
 | GET | `/api/v1/settings/public` | `{ "rub_to_cny_rate": "0.085000", "updated_at": "..." }` (из того же кэша) |
@@ -124,8 +124,8 @@ Angular:
 - TTL: `rememberForever` до явной инвалидации.
 - Инвалидация: activate/rollback ревизии, смена `rub_to_cny_rate`.
 - HTTP: `Cache-Control: private, max-age=300` на GET справочников.
-- Angular `/calculator` при открытии вызывает bootstrap один раз и фильтрует каналы по platform на клиенте.
-- Платформы на `/calculator` **вшиты** в бандл (`CALCULATOR_PLATFORMS`), совпадают с `App\Enums\Platform`. GET `/platforms` для формы не нужен.
+- Angular `/` при открытии вызывает bootstrap один раз и фильтрует каналы по platform на клиенте.
+- Платформы на калькуляторе **вшиты** в бандл (`CALCULATOR_PLATFORMS`), совпадают с `App\Enums\Platform`. GET `/platforms` для формы не нужен.
 - Браузер: `CalculatorQueryCache` (memory + `localStorage`, префикс `atc.calculator.query.`, TTL 15 мин). POST `/calculations` не кэшируется. Admin activate/rollback/смена курса в том же браузере вызывает `clear()`.
 
 ## Admin endpoints

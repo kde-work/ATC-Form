@@ -21,7 +21,7 @@ paths:
       tags: [Public]
       summary: Preload all calculator form reference data
       description: |
-        Single payload for `/calculator`: platforms, all active delivery channels
+        Single payload for the public calculator: platforms, all active delivery channels
         of the active revision, and public exchange rate. Served from file/DB cache
         (`CACHE_STORE`), invalidated on tariff activation/rollback and rate change.
         Response includes `Cache-Control: private, max-age=300`. Angular also caches

@@ -3,12 +3,12 @@ import { adminPath } from './core/constants/admin-path';
 import { adminAuthGuard, adminGuestGuard } from './core/guards/admin-auth.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'calculator' },
   {
-    path: 'calculator',
+    path: '',
     loadComponent: () =>
       import('./features/calculator/calculator-page').then((m) => m.CalculatorPage),
   },
+  { path: 'calculator', pathMatch: 'full', redirectTo: '' },
   {
     path: `${adminPath}/login`,
     canActivate: [adminGuestGuard],
@@ -49,5 +49,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'calculator' },
+  { path: '**', redirectTo: '' },
 ];

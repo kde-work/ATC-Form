@@ -49,7 +49,7 @@ docker compose up -d --force-recreate nginx
 
 Или из корня: `npm run build:frontend`, затем recreate nginx.
 
-Открыть: [http://atc.form](http://atc.form) → редирект на `/calculator`.
+Открыть: [http://atc.form](http://atc.form) (калькулятор на корне).
 
 API: [http://atc.form/api/v1/platforms](http://atc.form/api/v1/platforms).
 

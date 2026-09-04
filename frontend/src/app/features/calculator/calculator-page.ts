@@ -26,10 +26,17 @@ import {
   PlatformDto,
 } from '../../core/models/api.models';
 import { LocaleService } from '../../core/i18n/locale.service';
+import type { CalculatorMessages } from '../../core/i18n/calculator-messages';
 import { CalculatorApiService } from '../../core/services/calculator-api.service';
 import { CALCULATOR_PLATFORMS } from '../../core/constants/platforms';
 import { SiteHeader } from '../../shared/components/site-header/site-header';
 import { ResultCard } from './result-card';
+
+/** Клиентские ошибки формы: текст берётся из текущего языка, а не из снимка. */
+type LocalizedErrorKey = keyof Pick<
+  CalculatorMessages,
+  'fixHighlightedFields' | 'networkError' | 'unexpectedError'
+>;
 
 function positiveNumberString(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -70,11 +77,19 @@ export class CalculatorPage implements OnInit {
   readonly channels = signal<DeliveryChannelDto[]>([]);
   readonly bootstrapLoading = signal(true);
   readonly submitting = signal(false);
-  readonly bootstrapError = signal<string | null>(null);
-  readonly formError = signal<string | null>(null);
+  private readonly bootstrapErrorKey = signal<LocalizedErrorKey | null>(null);
+  private readonly bootstrapErrorRaw = signal<string | null>(null);
+  private readonly formErrorKey = signal<LocalizedErrorKey | null>(null);
+  private readonly formErrorRaw = signal<string | null>(null);
   readonly fieldErrors = signal<Record<string, string[]>>({});
   readonly result = signal<CalculationResultDto | null>(null);
   readonly showYandexDimensions = signal(false);
+
+  /** Сообщение bootstrap с учётом текущего языка. */
+  readonly bootstrapError = computed(() => this.resolveError(this.bootstrapErrorKey(), this.bootstrapErrorRaw()));
+
+  /** Сообщение формы с учётом текущего языка. */
+  readonly formError = computed(() => this.resolveError(this.formErrorKey(), this.formErrorRaw()));
 
   readonly form = this.fb.nonNullable.group({
     platform: this.fb.nonNullable.control<PlatformCode | ''>('', {
@@ -119,11 +134,11 @@ export class CalculatorPage implements OnInit {
       .subscribe({
         next: (bootstrap) => {
           this.allChannels.set(bootstrap.delivery_channels);
-          this.bootstrapError.set(null);
+          this.clearBootstrapError();
           this.applyChannelFilter(this.form.controls.platform.value);
         },
         error: (error: unknown) => {
-          this.bootstrapError.set(this.errorMessage(error));
+          this.setBootstrapFromUnknown(error);
         },
       });
 
@@ -139,19 +154,19 @@ export class CalculatorPage implements OnInit {
   }
 
   onSubmit(): void {
-    this.formError.set(null);
+    this.clearFormError();
     this.fieldErrors.set({});
     this.applyPlatformValidators();
     this.form.markAllAsTouched();
 
     if (this.form.invalid) {
-      this.formError.set(this.locale.messages().fixHighlightedFields);
+      this.setFormErrorKey('fixHighlightedFields');
       return;
     }
 
     const payload = this.buildPayload();
     if (payload === null) {
-      this.formError.set(this.locale.messages().fixHighlightedFields);
+      this.setFormErrorKey('fixHighlightedFields');
       return;
     }
 
@@ -167,17 +182,15 @@ export class CalculatorPage implements OnInit {
       .subscribe({
         next: (response) => {
           this.result.set(response);
-          this.formError.set(null);
+          this.clearFormError();
           this.fieldErrors.set({});
         },
         error: (error: unknown) => {
           if (error instanceof ApiClientError) {
             this.fieldErrors.set(error.fieldErrors);
-            this.formError.set(this.errorMessage(error));
-            return;
           }
 
-          this.formError.set(this.errorMessage(error));
+          this.setFormFromUnknown(error);
         },
       });
   }
@@ -295,18 +308,66 @@ export class CalculatorPage implements OnInit {
     return payload;
   }
 
-  private errorMessage(error: unknown): string {
+  private resolveError(key: LocalizedErrorKey | null, raw: string | null): string | null {
+    if (key !== null) {
+      return this.locale.messages()[key];
+    }
+
+    return raw;
+  }
+
+  private clearBootstrapError(): void {
+    this.bootstrapErrorKey.set(null);
+    this.bootstrapErrorRaw.set(null);
+  }
+
+  private clearFormError(): void {
+    this.formErrorKey.set(null);
+    this.formErrorRaw.set(null);
+  }
+
+  private setFormErrorKey(key: LocalizedErrorKey): void {
+    this.formErrorRaw.set(null);
+    this.formErrorKey.set(key);
+  }
+
+  private setBootstrapFromUnknown(error: unknown): void {
+    this.applyUnknownError(error, (key) => {
+      this.bootstrapErrorRaw.set(null);
+      this.bootstrapErrorKey.set(key);
+    }, (message) => {
+      this.bootstrapErrorKey.set(null);
+      this.bootstrapErrorRaw.set(message);
+    });
+  }
+
+  private setFormFromUnknown(error: unknown): void {
+    this.applyUnknownError(error, (key) => this.setFormErrorKey(key), (message) => {
+      this.formErrorKey.set(null);
+      this.formErrorRaw.set(message);
+    });
+  }
+
+  private applyUnknownError(
+    error: unknown,
+    setKey: (key: LocalizedErrorKey) => void,
+    setRaw: (message: string) => void,
+  ): void {
     if (error instanceof ApiClientError) {
       if (error.code === 'network_error') {
-        return this.locale.messages().networkError;
+        setKey('networkError');
+        return;
       }
 
-      return error.message;
-    }
-    if (error instanceof Error) {
-      return error.message;
+      setRaw(error.message);
+      return;
     }
 
-    return this.locale.messages().unexpectedError;
+    if (error instanceof Error) {
+      setRaw(error.message);
+      return;
+    }
+
+    setKey('unexpectedError');
   }
 }
