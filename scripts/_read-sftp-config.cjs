@@ -20,7 +20,10 @@ try {
 const host = String(cfg.host || '').trim();
 const username = String(cfg.username || '').trim();
 const remotePath = String(cfg.remotePath || '').trim();
-const port = Number(cfg.port) > 0 ? Number(cfg.port) : 22;
+const protocolRaw = String(cfg.protocol || 'sftp').trim().toLowerCase();
+const protocol = protocolRaw === 'ftp' || protocolRaw === 'ftps' ? protocolRaw : 'sftp';
+const defaultPort = protocol === 'sftp' ? 22 : 21;
+const port = Number(cfg.port) > 0 ? Number(cfg.port) : defaultPort;
 const privateKeyPath = cfg.privateKeyPath ? String(cfg.privateKeyPath).trim() : '';
 
 if (!host || !username || !remotePath) {
@@ -32,6 +35,7 @@ process.stdout.write(
   [
     `HOST=${host}`,
     `PORT=${port}`,
+    `PROTOCOL=${protocol}`,
     `SFTP_USER=${username}`,
     `REMOTE=${remotePath}`,
     `SFTP_KEY=${privateKeyPath}`,

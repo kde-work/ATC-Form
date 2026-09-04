@@ -23,6 +23,7 @@ if not exist "%LOCAL%\index.html" (
 )
 
 echo Config: .vscode\sftp.json
+echo Proto:  %PROTOCOL% %HOST%:%PORT%
 echo Local:  %LOCAL%\
 echo Remote: %SFTP_USER%@%HOST%:%REMOTE_PUBLIC%/
 echo.
@@ -31,7 +32,11 @@ dir /b "%LOCAL%"
 echo.
 
 echo Uploading browser/ contents to remote public/...
-if "%SFTP_KEY%"=="" (
+if /i "%PROTOCOL%"=="ftp" (
+    node "%~dp0_ftp-upload.cjs" "%LOCAL%" "%REMOTE_PUBLIC%"
+) else if /i "%PROTOCOL%"=="ftps" (
+    node "%~dp0_ftp-upload.cjs" "%LOCAL%" "%REMOTE_PUBLIC%"
+) else if "%SFTP_KEY%"=="" (
     scp -P %PORT% -o StrictHostKeyChecking=accept-new -r "%LOCAL%\*" %SFTP_USER%@%HOST%:%REMOTE_PUBLIC%/
 ) else (
     scp -P %PORT% -o StrictHostKeyChecking=accept-new -i "%SFTP_KEY%" -r "%LOCAL%\*" %SFTP_USER%@%HOST%:%REMOTE_PUBLIC%/

@@ -1,6 +1,6 @@
 @echo off
-rem Loads HOST, PORT, SFTP_USER, REMOTE, SFTP_KEY from .vscode/sftp.json
-rem and configures SSH_ASKPASS for password auth.
+rem Loads HOST, PORT, PROTOCOL, SFTP_USER, REMOTE, SFTP_KEY from .vscode/sftp.json
+rem and configures SSH_ASKPASS for password auth (sftp/scp).
 
 set "SFTP_JSON=%~dp0..\.vscode\sftp.json"
 if not exist "%SFTP_JSON%" (
@@ -16,6 +16,7 @@ if errorlevel 1 (
 
 set "HOST="
 set "PORT="
+set "PROTOCOL="
 set "SFTP_USER="
 set "REMOTE="
 set "SFTP_KEY="
@@ -38,7 +39,14 @@ if not defined REMOTE (
     echo Failed to parse sftp.json remotePath
     exit /b 1
 )
-if not defined PORT set "PORT=22"
+if not defined PROTOCOL set "PROTOCOL=sftp"
+if not defined PORT (
+    if /i "%PROTOCOL%"=="sftp" (
+        set "PORT=22"
+    ) else (
+        set "PORT=21"
+    )
+)
 
 set "SSH_ASKPASS=%~dp0_sftp-askpass.cmd"
 set "SSH_ASKPASS_REQUIRE=force"
