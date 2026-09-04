@@ -25,6 +25,7 @@ import {
   PlatformCode,
   PlatformDto,
 } from '../../core/models/api.models';
+import { LocaleService } from '../../core/i18n/locale.service';
 import { CalculatorApiService } from '../../core/services/calculator-api.service';
 import { CALCULATOR_PLATFORMS } from '../../core/constants/platforms';
 import { SiteHeader } from '../../shared/components/site-header/site-header';
@@ -60,6 +61,7 @@ export class CalculatorPage implements OnInit {
   private readonly api = inject(CalculatorApiService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly locale = inject(LocaleService);
 
   /** Вшито в бандл: совпадает с backend enum, без HTTP. */
   readonly platforms = signal<PlatformDto[]>([...CALCULATOR_PLATFORMS]);
@@ -143,13 +145,13 @@ export class CalculatorPage implements OnInit {
     this.form.markAllAsTouched();
 
     if (this.form.invalid) {
-      this.formError.set('Please fix the highlighted fields before calculating.');
+      this.formError.set(this.locale.messages().fixHighlightedFields);
       return;
     }
 
     const payload = this.buildPayload();
     if (payload === null) {
-      this.formError.set('Please fix the highlighted fields before calculating.');
+      this.formError.set(this.locale.messages().fixHighlightedFields);
       return;
     }
 
@@ -171,7 +173,7 @@ export class CalculatorPage implements OnInit {
         error: (error: unknown) => {
           if (error instanceof ApiClientError) {
             this.fieldErrors.set(error.fieldErrors);
-            this.formError.set(error.message);
+            this.formError.set(this.errorMessage(error));
             return;
           }
 
@@ -192,16 +194,16 @@ export class CalculatorPage implements OnInit {
     }
 
     if (control.errors['required']) {
-      return 'This field is required.';
+      return this.locale.messages().fieldRequired;
     }
     if (control.errors['numberFormat']) {
-      return 'Enter a valid decimal number (e.g. 12.5).';
+      return this.locale.messages().fieldNumberFormat;
     }
     if (control.errors['positive']) {
-      return 'Value must be greater than 0.';
+      return this.locale.messages().fieldPositive;
     }
 
-    return 'Invalid value.';
+    return this.locale.messages().fieldInvalid;
   }
 
   private onPlatformChanged(platform: PlatformCode | ''): void {
@@ -295,12 +297,16 @@ export class CalculatorPage implements OnInit {
 
   private errorMessage(error: unknown): string {
     if (error instanceof ApiClientError) {
+      if (error.code === 'network_error') {
+        return this.locale.messages().networkError;
+      }
+
       return error.message;
     }
     if (error instanceof Error) {
       return error.message;
     }
 
-    return 'Unexpected error.';
+    return this.locale.messages().unexpectedError;
   }
 }

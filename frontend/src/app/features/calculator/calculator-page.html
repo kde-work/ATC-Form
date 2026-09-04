@@ -1,11 +1,9 @@
 <div class="page">
-  <app-site-header />
+  <app-site-header [showLocaleSwitch]="true" />
 
   <main>
-    <h1 class="page__heading">Calculate delivery cost</h1>
-    <p class="page__lead">
-      Enter shipment details. Pricing is calculated by the server; this form only validates inputs.
-    </p>
+    <h1 class="page__heading">{{ locale.messages().pageHeading }}</h1>
+    <p class="page__lead">{{ locale.messages().pageLead }}</p>
 
     @if (bootstrapError()) {
       <div class="alert alert--error" role="alert">
@@ -16,14 +14,14 @@
     <form class="calc-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
       <div class="calc-form__row">
         <div class="field">
-          <label for="platform">Platform</label>
+          <label for="platform">{{ locale.messages().platform }}</label>
           <select
             id="platform"
             formControlName="platform"
             [attr.aria-invalid]="fieldError('platform') ? true : null"
             [attr.aria-describedby]="fieldError('platform') ? 'platform-error' : null"
           >
-            <option value="" disabled>Select platform</option>
+            <option value="" disabled>{{ locale.messages().selectPlatform }}</option>
             @for (platform of platforms(); track platform.code) {
               <option [value]="platform.code">{{ platform.name }}</option>
             }
@@ -34,7 +32,7 @@
         </div>
 
         <div class="field">
-          <label for="delivery_channel_code">Delivery channel</label>
+          <label for="delivery_channel_code">{{ locale.messages().deliveryChannel }}</label>
           <select
             id="delivery_channel_code"
             formControlName="delivery_channel_code"
@@ -45,22 +43,20 @@
           >
             <option value="" disabled>
               @if (bootstrapLoading()) {
-                Loading channels…
+                {{ locale.messages().loadingChannels }}
               } @else if (!selectedPlatform()) {
-                Select platform first
+                {{ locale.messages().selectPlatformFirst }}
               } @else if (channels().length === 0) {
-                No active channels
+                {{ locale.messages().noActiveChannels }}
               } @else {
-                Select channel
+                {{ locale.messages().selectChannel }}
               }
             </option>
             @for (channel of channels(); track channel.code) {
               <option [value]="channel.code">{{ channel.name }}</option>
             }
           </select>
-          <p id="channel-hint" class="field__hint">
-            Channels are preloaded with the form; filtered after platform is selected.
-          </p>
+          <p id="channel-hint" class="field__hint">{{ locale.messages().channelHint }}</p>
           @if (fieldError('delivery_channel_code'); as message) {
             <p id="channel-error" class="field__error" role="alert">{{ message }}</p>
           }
@@ -69,7 +65,7 @@
 
       <div class="calc-form__row">
         <div class="field">
-          <label for="physical_weight_grams">Physical weight, g</label>
+          <label for="physical_weight_grams">{{ locale.messages().physicalWeight }}</label>
           <input
             id="physical_weight_grams"
             type="text"
@@ -96,9 +92,9 @@
             [attr.aria-expanded]="showYandexDimensions()"
           >
             @if (showYandexDimensions()) {
-              Hide dimensions
+              {{ locale.messages().hideDimensions }}
             } @else {
-              Show dimensions (optional)
+              {{ locale.messages().showDimensions }}
             }
           </button>
         </div>
@@ -106,10 +102,10 @@
 
       @if (showDimensions()) {
         <fieldset class="calc-form__fieldset">
-          <legend>Dimensions, cm</legend>
+          <legend>{{ locale.messages().dimensions }}</legend>
           <div class="calc-form__row calc-form__row--3">
             <div class="field">
-              <label for="length_cm">Length</label>
+              <label for="length_cm">{{ locale.messages().length }}</label>
               <input
                 id="length_cm"
                 type="text"
@@ -124,7 +120,7 @@
               }
             </div>
             <div class="field">
-              <label for="width_cm">Width</label>
+              <label for="width_cm">{{ locale.messages().width }}</label>
               <input
                 id="width_cm"
                 type="text"
@@ -139,7 +135,7 @@
               }
             </div>
             <div class="field">
-              <label for="height_cm">Height</label>
+              <label for="height_cm">{{ locale.messages().height }}</label>
               <input
                 id="height_cm"
                 type="text"
@@ -161,9 +157,9 @@
         <div class="calc-form__row calc-form__row--order">
           <div class="field">
             <label for="order_cost">
-              Order cost
+              {{ locale.messages().orderCost }}
               @if (isYandex()) {
-                <span class="field__optional">(optional)</span>
+                <span class="field__optional">{{ locale.messages().optional }}</span>
               }
             </label>
             <input
@@ -181,8 +177,12 @@
           </div>
 
           <fieldset class="field field--currency">
-            <legend>Currency</legend>
-            <div class="currency-toggle" role="radiogroup" aria-label="Order cost currency">
+            <legend>{{ locale.messages().currency }}</legend>
+            <div
+              class="currency-toggle"
+              role="radiogroup"
+              [attr.aria-label]="locale.messages().currencyAria"
+            >
               <label class="currency-toggle__option">
                 <input type="radio" formControlName="order_cost_currency" value="CNY" />
                 <span>CNY</span>
@@ -215,18 +215,16 @@
       <div class="calc-form__actions">
         <button type="submit" class="btn-primary" [disabled]="submitting()">
           @if (submitting()) {
-            Calculating…
+            {{ locale.messages().calculating }}
           } @else {
-            Calculate
+            {{ locale.messages().calculate }}
           }
         </button>
       </div>
     </form>
 
     @if (!result() && !submitting() && !formError()) {
-      <p class="empty-hint" aria-live="polite">
-        Submit the form to see the delivery cost breakdown.
-      </p>
+      <p class="empty-hint" aria-live="polite">{{ locale.messages().emptyHint }}</p>
     }
 
     @if (result(); as calculation) {

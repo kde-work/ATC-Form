@@ -8,5 +8,38 @@
       height="48"
     />
   </a>
-  <p class="site-header__title">{{ title() }}</p>
+  <p class="site-header__title">
+    @if (showLocaleSwitch()) {
+      {{ locale.messages().siteTitle }}
+    } @else {
+      {{ title() }}
+    }
+  </p>
+
+  @if (showLocaleSwitch()) {
+    <div
+      class="lang-switch"
+      role="group"
+      [attr.aria-label]="locale.messages().language"
+    >
+      <button
+        type="button"
+        class="lang-switch__btn"
+        [class.lang-switch__btn--active]="locale.locale() === 'zh'"
+        [attr.aria-pressed]="locale.locale() === 'zh'"
+        (click)="locale.setLocale('zh')"
+      >
+        中文
+      </button>
+      <button
+        type="button"
+        class="lang-switch__btn"
+        [class.lang-switch__btn--active]="locale.locale() === 'en'"
+        [attr.aria-pressed]="locale.locale() === 'en'"
+        (click)="locale.setLocale('en')"
+      >
+        EN
+      </button>
+    </div>
+  }
 </header>

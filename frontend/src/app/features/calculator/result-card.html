@@ -5,25 +5,23 @@
   aria-atomic="true"
 >
   <header class="result-card__header">
-    <h2 id="result-heading">Calculation result</h2>
+    <h2 id="result-heading">{{ locale.messages().resultHeading }}</h2>
     <p
       class="result-card__status"
       [class.result-card__status--ok]="result().eligible"
       [class.result-card__status--bad]="!result().eligible"
     >
       @if (result().eligible) {
-        Eligible
+        {{ locale.messages().eligible }}
       } @else {
-        Not eligible
+        {{ locale.messages().notEligible }}
       }
     </p>
   </header>
 
   @if (!result().eligible) {
     <div class="result-card__alert" role="alert">
-      <p class="result-card__alert-title">
-        This shipment is not eligible for the selected delivery channel.
-      </p>
+      <p class="result-card__alert-title">{{ locale.messages().notEligibleMessage }}</p>
       @if (result().errors.length > 0) {
         <ul class="result-card__errors">
           @for (error of result().errors; track error) {
@@ -36,72 +34,72 @@
 
   <dl class="result-card__grid">
     <div>
-      <dt>Platform</dt>
+      <dt>{{ locale.messages().platform }}</dt>
       <dd>{{ result().platform.name }}</dd>
     </div>
     <div>
-      <dt>Delivery channel</dt>
+      <dt>{{ locale.messages().deliveryChannel }}</dt>
       <dd>{{ result().channel.name }}</dd>
     </div>
     <div>
-      <dt>Physical weight, g</dt>
+      <dt>{{ locale.messages().physicalWeight }}</dt>
       <dd>{{ formatDecimal(result().physical_weight_grams) }}</dd>
     </div>
 
     @if (isOzon()) {
       <div>
-        <dt>Volumetric weight, g</dt>
+        <dt>{{ locale.messages().volumetricWeight }}</dt>
         <dd>{{ formatDecimal(result().volumetric_weight_grams) }}</dd>
       </div>
       <div>
-        <dt>Chargeable weight, g</dt>
+        <dt>{{ locale.messages().chargeableWeight }}</dt>
         <dd>{{ formatDecimal(result().chargeable_weight_grams) }}</dd>
       </div>
       <div>
-        <dt>Fixed fee, CNY</dt>
+        <dt>{{ locale.messages().fixedFeeCny }}</dt>
         <dd>{{ formatMoney(result().fixed_fee, 'CNY') }}</dd>
       </div>
       <div>
-        <dt>Rate per gram, CNY</dt>
+        <dt>{{ locale.messages().ratePerGramCny }}</dt>
         <dd>{{ formatMoney(result().rate_per_gram, 'CNY') }}</dd>
       </div>
       <div>
-        <dt>Final cost, CNY</dt>
+        <dt>{{ locale.messages().finalCostCny }}</dt>
         <dd>{{ formatMoney(result().final_cost, 'CNY') }}</dd>
       </div>
       <div>
-        <dt>Order cost</dt>
+        <dt>{{ locale.messages().orderCost }}</dt>
         <dd>{{ formatMoney(result().order_cost, result().order_cost_currency) }}</dd>
       </div>
       <div>
-        <dt>Order cost, CNY</dt>
+        <dt>{{ locale.messages().orderCostCny }}</dt>
         <dd>{{ formatMoney(result().order_cost_cny, 'CNY') }}</dd>
       </div>
     }
 
     @if (isYandex()) {
       <div>
-        <dt>Billed weight, g</dt>
+        <dt>{{ locale.messages().billedWeight }}</dt>
         <dd>{{ formatDecimal(result().billed_weight_grams) }}</dd>
       </div>
       <div>
-        <dt>Fixed fee, RUB</dt>
+        <dt>{{ locale.messages().fixedFeeRub }}</dt>
         <dd>{{ formatMoney(result().fixed_fee, 'RUB') }}</dd>
       </div>
       <div>
-        <dt>Rate per kg, RUB</dt>
+        <dt>{{ locale.messages().ratePerKgRub }}</dt>
         <dd>{{ formatMoney(result().rate_per_kg, 'RUB') }}</dd>
       </div>
       <div>
-        <dt>Final cost, RUB</dt>
+        <dt>{{ locale.messages().finalCostRub }}</dt>
         <dd>{{ formatMoney(result().final_cost, 'RUB') }}</dd>
       </div>
       <div>
-        <dt>Active RUB → CNY rate</dt>
+        <dt>{{ locale.messages().exchangeRate }}</dt>
         <dd>{{ formatDecimal(result().exchange_rate) }}</dd>
       </div>
       <div>
-        <dt>Final cost, CNY</dt>
+        <dt>{{ locale.messages().finalCostCny }}</dt>
         <dd>{{ formatMoney(result().final_cost_cny, 'CNY') }}</dd>
       </div>
     }
@@ -109,7 +107,7 @@
 
   @if (result().warnings.length > 0) {
     <div class="result-card__warnings">
-      <h3>Warnings</h3>
+      <h3>{{ locale.messages().warnings }}</h3>
       <ul>
         @for (warning of result().warnings; track warning) {
           <li>{{ warning }}</li>
@@ -120,7 +118,7 @@
 
   @if (result().eligible && result().errors.length > 0) {
     <div class="result-card__notes">
-      <h3>Notes</h3>
+      <h3>{{ locale.messages().notes }}</h3>
       <ul>
         @for (error of result().errors; track error) {
           <li>{{ error }}</li>
